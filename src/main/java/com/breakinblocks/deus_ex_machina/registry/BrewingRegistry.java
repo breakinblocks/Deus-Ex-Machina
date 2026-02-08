@@ -1,49 +1,42 @@
 package com.breakinblocks.deus_ex_machina.registry;
 
-import net.minecraft.world.item.Item;
+import com.breakinblocks.deus_ex_machina.DeusExMachina;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.alchemy.Potion;
-import net.minecraft.world.item.alchemy.PotionUtils;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
-import net.minecraftforge.common.brewing.BrewingRecipeRegistry;
-import net.minecraftforge.common.brewing.IBrewingRecipe;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.common.brewing.IBrewingRecipe;
+import net.neoforged.neoforge.event.brewing.RegisterBrewingRecipesEvent;
 
+@EventBusSubscriber(modid = DeusExMachina.MODID)
 public class BrewingRegistry {
-    public static void registerRecipes() {
-        BrewingRecipeRegistry.addRecipe(new BrewingRecipe(
-                Potions.LONG_REGENERATION,
-                Items.HONEY_BOTTLE,
-                new ItemStack(ItemRegistry.AMBROSIA.get())
-        ));
+
+    @SubscribeEvent
+    public static void registerRecipes(RegisterBrewingRecipesEvent event) {
+        event.getBuilder().addRecipe(new AmbrosiaBrewingRecipe());
     }
 }
 
-class BrewingRecipe implements IBrewingRecipe {
+class AmbrosiaBrewingRecipe implements IBrewingRecipe {
 
-    private final Potion input;
-    private final Item ingredient;
-    private final ItemStack output;
-
-    public BrewingRecipe(Potion input, Item ingredient, ItemStack output) {
-        this.input = input;
-        this.ingredient = ingredient;
-        this.output = output;
-    }
     @Override
     public boolean isInput(ItemStack input) {
-        return PotionUtils.getPotion(input) == this.input;
+        PotionContents contents = input.get(DataComponents.POTION_CONTENTS);
+        return contents != null && contents.is(Potions.LONG_REGENERATION);
     }
 
     @Override
     public boolean isIngredient(ItemStack ingredient) {
-        return ingredient.getItem() == this.ingredient;
+        return ingredient.is(Items.HONEY_BOTTLE);
     }
 
     @Override
     public ItemStack getOutput(ItemStack input, ItemStack ingredient) {
         if (isInput(input) && isIngredient(ingredient)) {
-            return this.output.copy();
+            return new ItemStack(ItemRegistry.AMBROSIA.get());
         }
         return ItemStack.EMPTY;
     }
