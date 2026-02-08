@@ -3,7 +3,7 @@ package com.breakinblocks.deus_ex_machina.events;
 import com.breakinblocks.deus_ex_machina.Config;
 import com.breakinblocks.deus_ex_machina.DeusExMachina;
 import com.breakinblocks.deus_ex_machina.data.DeusExBuffsHelper;
-import com.breakinblocks.deus_ex_machina.network.DeathBuffPacket;
+import com.breakinblocks.deus_ex_machina.network.DeathBuffPayload;
 import com.breakinblocks.deus_ex_machina.network.NetworkHandler;
 import com.breakinblocks.deus_ex_machina.registry.EffectRegistry;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,17 +11,16 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 import static com.breakinblocks.deus_ex_machina.DeusExMachina.debug;
 import static com.breakinblocks.deus_ex_machina.registry.EffectRegistry.DEUS_EX_MACHINA_EFFECT;
 
-
-@Mod.EventBusSubscriber(modid = DeusExMachina.MODID)
+@EventBusSubscriber(modid = DeusExMachina.MODID)
 public class DeathEvents {
 
     @SubscribeEvent
@@ -29,9 +28,9 @@ public class DeathEvents {
         LivingEntity entity = event.getEntity();
         DamageSource source = event.getSource();
 
-        if (entity instanceof Player) {
-            handlePlayerDeath((Player) entity, source);
-        } else  {
+        if (entity instanceof Player player) {
+            handlePlayerDeath(player, source);
+        } else {
             handleMobDeath(entity, source);
         }
     }
@@ -46,7 +45,7 @@ public class DeathEvents {
             DeusExMachina.LOGGER.info("[DeathEvents] Early return: {} is not a Deus Ex mob", source.getEntity().getType());
             return;
         }
-        if (!player.hasEffect(EffectRegistry.DEUS_EX_MACHINA_EFFECT.get())) {
+        if (!player.hasEffect(EffectRegistry.DEUS_EX_MACHINA_EFFECT)) {
             DeusExMachina.LOGGER.info("[DeathEvents] Early return: player doesn't have Deus Ex Machina effect");
             return;
         }
@@ -66,9 +65,9 @@ public class DeathEvents {
             debug("New Attack Boost for " + key + ": " + newAttackBoost);
 
             if (player instanceof ServerPlayer serverPlayer) {
-                DeusExMachina.LOGGER.info("[DeathEvents] Sending DeathBuffPacket to {} for mob {}",
+                DeusExMachina.LOGGER.info("[DeathEvents] Sending DeathBuffPayload to {} for mob {}",
                         serverPlayer.getName().getString(), key);
-                NetworkHandler.sendToPlayer(serverPlayer, new DeathBuffPacket(
+                NetworkHandler.sendToPlayer(serverPlayer, new DeathBuffPayload(
                         key, resistanceGain, attackBoostGain, newResistance, newAttackBoost
                 ));
             }
@@ -80,7 +79,7 @@ public class DeathEvents {
         if (source.getEntity() == null) return;
         if (!(source.getEntity() instanceof Player player)) return;
 
-        if (!player.hasEffect(EffectRegistry.DEUS_EX_MACHINA_EFFECT.get())) return;
+        if (!player.hasEffect(EffectRegistry.DEUS_EX_MACHINA_EFFECT)) return;
 
         DeusExBuffsHelper.withBuffsForMob(player, entity, (buff, key) -> {
             if (Config.resistanceReset) buff.setResistance(key, Config.minResistance);
@@ -91,9 +90,9 @@ public class DeathEvents {
 
     @SubscribeEvent
     public static void onPlayerCloned(PlayerEvent.Clone event) {
-        event.getOriginal().reviveCaps();
+        // With data attachments, data is automatically copied on death if the attachment is serializable
+        // But we still need to handle the manual copy for edge cases
         DeusExBuffsHelper.copyBuffs(event.getOriginal(), event.getEntity());
-        event.getOriginal().invalidateCaps();
     }
 
     @SubscribeEvent
@@ -101,12 +100,11 @@ public class DeathEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             if (DeusExBuffsHelper.isEnabled(player)) {
                 player.addEffect(new MobEffectInstance(
-                        DEUS_EX_MACHINA_EFFECT.get(), -1, 0, false, false, Config.showIcon
+                        DEUS_EX_MACHINA_EFFECT, -1, 0, false, false, Config.showIcon
                 ));
             } else {
-                player.removeEffect(DEUS_EX_MACHINA_EFFECT.get());
+                player.removeEffect(DEUS_EX_MACHINA_EFFECT);
             }
         }
     }
-
 }

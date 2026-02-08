@@ -8,14 +8,18 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodProperties;
-import net.minecraft.world.item.*;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemUtils;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 
 import static com.breakinblocks.deus_ex_machina.registry.EffectRegistry.DEUS_EX_MACHINA_EFFECT;
 
 public class AmbrosiaItem extends Item {
     public static final FoodProperties AMBROSIA = new FoodProperties.Builder()
-            .alwaysEat()
+            .alwaysEdible()
             .build();
 
     public AmbrosiaItem(Properties properties) {
@@ -26,9 +30,9 @@ public class AmbrosiaItem extends Item {
     public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
         if (!level.isClientSide) {
             if (DeusExBuffsHelper.isEnabled(entity)) {
-                entity.removeEffect(DEUS_EX_MACHINA_EFFECT.get());
+                entity.removeEffect(DEUS_EX_MACHINA_EFFECT);
             } else {
-                entity.addEffect(new MobEffectInstance(DEUS_EX_MACHINA_EFFECT.get(), -1, 0, false, false, Config.showIcon));
+                entity.addEffect(new MobEffectInstance(DEUS_EX_MACHINA_EFFECT, -1, 0, false, false, Config.showIcon));
             }
         }
         if (entity instanceof Player player && !player.getAbilities().instabuild) {
@@ -40,8 +44,9 @@ public class AmbrosiaItem extends Item {
         }
         return stack;
     }
+
     @Override
-    public int getUseDuration(ItemStack stack) {
+    public int getUseDuration(ItemStack stack, LivingEntity entity) {
         return 32;
     }
 

@@ -1,12 +1,12 @@
 package com.breakinblocks.deus_ex_machina.client;
 
 import com.breakinblocks.deus_ex_machina.DeusExMachina;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 
-@Mod.EventBusSubscriber(modid = DeusExMachina.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DeusExMachina.MODID, value = Dist.CLIENT)
 public class ClientEvents {
 
     @SubscribeEvent
