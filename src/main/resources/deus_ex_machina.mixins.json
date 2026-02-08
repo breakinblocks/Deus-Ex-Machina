@@ -2,11 +2,12 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.breakinblocks.deus_ex_machina.mixin",
-  "compatibilityLevel": "JAVA_8",
+  "compatibilityLevel": "JAVA_17",
   "refmap": "deus_ex_machina.refmap.json",
   "mixins": [
   ],
   "client": [
+    "DeathScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

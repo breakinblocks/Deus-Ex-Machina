@@ -1,7 +1,7 @@
 package com.breakinblocks.deus_ex_machina.item;
 
 import com.breakinblocks.deus_ex_machina.Config;
-import com.breakinblocks.deus_ex_machina.data.DeusExBuffsProvider;
+import com.breakinblocks.deus_ex_machina.data.DeusExBuffsHelper;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -25,14 +25,11 @@ public class AmbrosiaItem extends Item {
     @Override
     public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
         if (!level.isClientSide) {
-            entity.getCapability(DeusExBuffsProvider.DEUS_EX_BUFFS).ifPresent(buff -> {
-                if(!buff.isEnabled()){
-                    entity.addEffect(new MobEffectInstance(DEUS_EX_MACHINA_EFFECT.get(), -1, 0, false, false, Config.showIcon));
-                } else {
-                    entity.removeEffect(DEUS_EX_MACHINA_EFFECT.get());
-                }
-            });
-
+            if (DeusExBuffsHelper.isEnabled(entity)) {
+                entity.removeEffect(DEUS_EX_MACHINA_EFFECT.get());
+            } else {
+                entity.addEffect(new MobEffectInstance(DEUS_EX_MACHINA_EFFECT.get(), -1, 0, false, false, Config.showIcon));
+            }
         }
         if (entity instanceof Player player && !player.getAbilities().instabuild) {
             stack.shrink(1);

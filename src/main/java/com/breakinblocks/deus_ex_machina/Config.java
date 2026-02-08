@@ -22,6 +22,7 @@ public class Config {
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> DEUS_EX_MOBS = BUILDER.comment("A List of mobs that are considered 'Deus Ex Machina' mobs. Supports exact matches (minecraft:zombie) or regex patterns wrapped in slashes (/minecraft:.*/)").defineListAllowEmpty("deusExMobs", List.of("minecraft:ender_dragon", "minecraft:wither", "minecraft:warden"), Config::validateMobPattern);
     private static final ForgeConfigSpec.EnumValue<DeusMode> DEUS_MODE = BUILDER.defineEnum("deusMode", WHITELIST);
     private static final ForgeConfigSpec.BooleanValue SHOW_ICON = BUILDER.comment("Show Deus Ex Machina icon on the player's HUD when the effect is active.").define("showIcon", true);
+    private static final ForgeConfigSpec.BooleanValue DEBUG_MODE = BUILDER.comment("Enable debug mode for additional logging.").define("debugMode", false);
 
     private static final ForgeConfigSpec.IntValue BASE_RESISTANCE = BUILDER.push("Resistance")
             .comment("Resistance Settings when Deus Ex Machina is active")
@@ -56,6 +57,7 @@ public class Config {
 
     public static DeusMode deusMode;
     public static boolean showIcon;
+    public static boolean debugMode;
     public static int minResistance;
     public static int maxResistance;
     public static int resistanceIncrease;
@@ -78,7 +80,7 @@ public class Config {
     static void onLoad(final ModConfigEvent event) {
         DeusExMobHandler.reload(DEUS_EX_MOBS.get());
         deusMode = DEUS_MODE.get();
-
+        debugMode = DEBUG_MODE.get();
         showIcon = SHOW_ICON.get();
 
         minResistance = BASE_RESISTANCE.get();

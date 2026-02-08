@@ -1,5 +1,10 @@
 {
   "item.deus_ex_machina.ambrosia": "Bottle of Ambrosia",
   "effect.deus_ex_machina.deus_ex_machina_effect": "Deus Ex Machina",
-  "effect.deus_ex_machina.deus_ex_machina_effect.desc": "A state in which you are even tougher. After you die, you become a little tougher still"
+  "effect.deus_ex_machina.deus_ex_machina_effect.desc": "A state in which you are even tougher. After you die, you become a little tougher still",
+  "deus_ex_machina.death_screen.header": "Deus Ex Machina Buffs vs %s:",
+  "deus_ex_machina.death_screen.resistance": "  Resistance: +%d%% ",
+  "deus_ex_machina.death_screen.resistance.now": "(now %d%%)",
+  "deus_ex_machina.death_screen.attack": "  Attack Boost: +%d%% ",
+  "deus_ex_machina.death_screen.attack.now": "(now %d%%)"
 }
