@@ -1,22 +1,25 @@
 package com.breakinblocks.deus_ex_machina.data;
 
 import com.breakinblocks.deus_ex_machina.Config;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.common.util.INBTSerializable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.UnknownNullability;
 
 import java.util.HashMap;
 
-public class DeusExBuffs implements IDeusExBuffs {
+public class DeusExBuffs implements IDeusExBuffs, INBTSerializable<CompoundTag> {
     private boolean enabled = false;
     private HashMap<ResourceLocation, Integer> resistances = new HashMap<>();
     private HashMap<ResourceLocation, Integer> strengths = new HashMap<>();
-
 
     @Override
     public boolean isEnabled() {
         return enabled;
     }
+
     @Override
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
@@ -113,12 +116,24 @@ public class DeusExBuffs implements IDeusExBuffs {
     }
 
     @Override
-    public void copyFrom(IDeusExBuffs source) {
+    public void copyFrom(@NotNull IDeusExBuffs source) {
         this.resistances.clear();
         this.strengths.clear();
 
         this.enabled = source.isEnabled();
         this.resistances.putAll(source.getResistances());
         this.strengths.putAll(source.getStrengths());
+    }
+
+    @Override
+    public @UnknownNullability CompoundTag serializeNBT(HolderLookup.Provider provider) {
+        CompoundTag nbt = new CompoundTag();
+        saveNBTData(nbt);
+        return nbt;
+    }
+
+    @Override
+    public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
+        loadNBTData(nbt);
     }
 }
