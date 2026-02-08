@@ -1,6 +1,7 @@
 package com.breakinblocks.deus_ex_machina.mixin;
 
 import com.breakinblocks.deus_ex_machina.client.DeathScreenData;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -19,7 +20,7 @@ public abstract class DeathScreenMixin extends Screen {
         super(title);
     }
 
-    @Inject(method = "render", at = @At("TAIL"))
+    @Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", at = @At("TAIL"), remap = false)
     private void renderBuffGains(GuiGraphics graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         if (!DeathScreenData.hasData()) return;
 

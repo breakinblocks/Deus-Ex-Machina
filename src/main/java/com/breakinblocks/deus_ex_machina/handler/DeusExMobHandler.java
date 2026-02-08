@@ -1,8 +1,8 @@
 package com.breakinblocks.deus_ex_machina.handler;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,7 +33,7 @@ public class DeusExMobHandler {
             } else {
                 ResourceLocation resourceLocation = ResourceLocation.tryParse(entry);
                 if (resourceLocation != null) {
-                    EntityType<?> type = ForgeRegistries.ENTITY_TYPES.getValue(resourceLocation);
+                    EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(resourceLocation);
                     if (type != null) {
                         exactMatches.add(type);
                     }
@@ -50,7 +50,7 @@ public class DeusExMobHandler {
         if (exactMatches.contains(entityType)) return true;
         if (regexPatterns.isEmpty()) return false;
 
-        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entityType);
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
         if (id == null) return false;
 
         String fullId = id.toString();
