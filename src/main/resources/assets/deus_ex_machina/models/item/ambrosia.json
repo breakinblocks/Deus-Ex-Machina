@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "deus_ex_machina:item/ambrosia"
+  }
+}
