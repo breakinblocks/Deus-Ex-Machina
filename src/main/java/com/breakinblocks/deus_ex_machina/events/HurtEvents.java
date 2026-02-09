@@ -3,6 +3,7 @@ package com.breakinblocks.deus_ex_machina.events;
 import com.breakinblocks.deus_ex_machina.Config;
 import com.breakinblocks.deus_ex_machina.DeusExMachina;
 import com.breakinblocks.deus_ex_machina.data.DeusExBuffsHelper;
+import com.breakinblocks.deus_ex_machina.data.DeusExMobConfigManager;
 import com.breakinblocks.deus_ex_machina.registry.EffectRegistry;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
@@ -34,6 +35,8 @@ public class HurtEvents {
         if (!player.hasEffect(EffectRegistry.DEUS_EX_MACHINA_EFFECT.get())) return;
 
         DeusExBuffsHelper.withBuffsForMob(player, source.getEntity().getType(), (buff, key) -> {
+            if (!DeusExMobConfigManager.isResistanceEnabled(key)) return;
+
             int resistance = buff.getResistance(key);
             if (resistance > 0) {
                 float originalDamage = event.getAmount();
@@ -50,6 +53,8 @@ public class HurtEvents {
         if (!player.hasEffect(EffectRegistry.DEUS_EX_MACHINA_EFFECT.get())) return;
 
         DeusExBuffsHelper.withBuffsForMob(player, entity, (buff, key) -> {
+            if (!DeusExMobConfigManager.isAttackEnabled(key)) return;
+
             int attackBoost = buff.getStrength(key);
             if (attackBoost > 0) {
                 float originalDamage = event.getAmount();

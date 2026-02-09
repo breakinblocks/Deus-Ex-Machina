@@ -1,6 +1,5 @@
 package com.breakinblocks.deus_ex_machina.data;
 
-import com.breakinblocks.deus_ex_machina.Config;
 import net.minecraft.nbt.CompoundTag;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,12 +32,14 @@ public class DeusExBuffs implements IDeusExBuffs {
 
     @Override
     public void setResistance(String mob, int amount) {
-        if (amount > Config.maxResistance) {
-            this.resistances.put(mob, Config.maxResistance);
+        int max = DeusExMobConfigManager.getResistanceMax(mob);
+        int min = DeusExMobConfigManager.getResistanceMin(mob);
+        if (amount > max) {
+            this.resistances.put(mob, max);
             return;
         }
-        if (amount < Config.minResistance) {
-            this.resistances.put(mob, Config.minResistance);
+        if (amount < min) {
+            this.resistances.put(mob, min);
             return;
         }
         this.resistances.put(mob, amount);
@@ -61,12 +62,14 @@ public class DeusExBuffs implements IDeusExBuffs {
 
     @Override
     public void setStrength(String mob, int amount) {
-        if (amount > Config.maxAttackBoost) {
-            this.strengths.put(mob, Config.maxAttackBoost);
+        int max = DeusExMobConfigManager.getAttackMax(mob);
+        int min = DeusExMobConfigManager.getAttackMin(mob);
+        if (amount > max) {
+            this.strengths.put(mob, max);
             return;
         }
-        if (amount < Config.minAttackBoost) {
-            this.strengths.put(mob, Config.minAttackBoost);
+        if (amount < min) {
+            this.strengths.put(mob, min);
             return;
         }
         this.strengths.put(mob, amount);
