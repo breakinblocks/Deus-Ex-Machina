@@ -66,12 +66,11 @@ public class DeusExBuffs implements IDeusExBuffs, INBTSerializable<CompoundTag> 
 
     @Override
     public void setStrength(ResourceLocation mob, int amount) {
-        int currentValue = this.strengths.getOrDefault(mob, 0);
-        if (currentValue + amount > Config.maxAttackBoost) {
+        if (amount > Config.maxAttackBoost) {
             this.strengths.put(mob, Config.maxAttackBoost);
             return;
         }
-        if (currentValue + amount < Config.minAttackBoost) {
+        if (amount < Config.minAttackBoost) {
             this.strengths.put(mob, Config.minAttackBoost);
             return;
         }
