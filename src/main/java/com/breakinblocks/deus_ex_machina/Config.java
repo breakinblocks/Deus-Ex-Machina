@@ -1,5 +1,7 @@
 package com.breakinblocks.deus_ex_machina;
 
+import com.breakinblocks.deus_ex_machina.enums.DeusModeEnum;
+import com.breakinblocks.deus_ex_machina.enums.ResetEnum;
 import com.breakinblocks.deus_ex_machina.handler.DeusExMobHandler;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
@@ -11,7 +13,8 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.List;
 
-import static com.breakinblocks.deus_ex_machina.DeusMode.*;
+import static com.breakinblocks.deus_ex_machina.enums.DeusModeEnum.*;
+import static com.breakinblocks.deus_ex_machina.enums.ResetEnum.*;
 
 @Mod.EventBusSubscriber(modid = DeusExMachina.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class Config {
@@ -20,7 +23,7 @@ public class Config {
 
 
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> DEUS_EX_MOBS = BUILDER.comment("A List of mobs that are considered 'Deus Ex Machina' mobs. Supports exact matches (minecraft:zombie) or regex patterns wrapped in slashes (/minecraft:.*/)").defineListAllowEmpty("deusExMobs", List.of("minecraft:ender_dragon", "minecraft:wither", "minecraft:warden"), Config::validateMobPattern);
-    private static final ForgeConfigSpec.EnumValue<DeusMode> DEUS_MODE = BUILDER.defineEnum("deusMode", WHITELIST);
+    private static final ForgeConfigSpec.EnumValue<DeusModeEnum> DEUS_MODE = BUILDER.defineEnum("deusMode", WHITELIST);
     private static final ForgeConfigSpec.BooleanValue SHOW_ICON = BUILDER.comment("Show Deus Ex Machina icon on the player's HUD when the effect is active.").define("showIcon", true);
     private static final ForgeConfigSpec.BooleanValue DEBUG_MODE = BUILDER.comment("Enable debug mode for additional logging.").define("debugMode", false);
 
@@ -34,9 +37,9 @@ public class Config {
     private static final ForgeConfigSpec.IntValue RESISTANCE_INCREASE = BUILDER
             .defineInRange("resistanceIncrease", 1, 0, 1000);
 
-    private static final ForgeConfigSpec.BooleanValue RESISTANCE_RESET = BUILDER
-            .comment("Reset Resistance for a mob when it's killed by the player. if false, Resistance will permanently increase until cap is reached.")
-            .define("resistanceReset", true);
+    private static final ForgeConfigSpec.EnumValue<ResetEnum> RESISTANCE_RESET = BUILDER
+            .comment("Reset Resistance for a mob when it's killed by the player. FULL resets it to minimum, PARTIAL reduces it by above value.")
+            .defineEnum("resistanceReset", FULL);
 
     private static final ForgeConfigSpec.IntValue BASE_ATTACK_BOOST = BUILDER.pop().push("Attack-Boost")
             .comment("Attack Boost Settings when Deus Ex Machina is active")
@@ -48,24 +51,24 @@ public class Config {
     private static final ForgeConfigSpec.IntValue ATTACK_BOOST_INCREASE = BUILDER
             .defineInRange("attackBoostIncrease", 1, 0, 1000);
 
-    private static final ForgeConfigSpec.BooleanValue ATTACK_BOOST_RESET = BUILDER
-            .comment("Reset Attack Boost for a mob when it's killed by the player. if false, Attack Boost will permanently increase until cap is reached.")
-            .define("attackBoostReset", true);
+    private static final ForgeConfigSpec.EnumValue<ResetEnum> ATTACK_BOOST_RESET = BUILDER
+            .comment("Reset Attack Boost for a mob when it's killed by the player. FULL resets it to minimum, PARTIAL reduces it by above value.")
+            .defineEnum("attackBoostReset", FULL);
 
     static final ForgeConfigSpec SPEC = BUILDER.build();
 
 
-    public static DeusMode deusMode;
+    public static DeusModeEnum deusModeEnum;
     public static boolean showIcon;
     public static boolean debugMode;
     public static int minResistance;
     public static int maxResistance;
     public static int resistanceIncrease;
-    public static boolean resistanceReset;
+    public static ResetEnum resistanceReset;
     public static int minAttackBoost;
     public static int maxAttackBoost;
     public static int attackBoostIncrease;
-    public static boolean attackBoostReset;
+    public static ResetEnum attackBoostReset;
 
     private static boolean validateMobPattern(final Object obj) {
         if (!(obj instanceof String pattern)) return false;
@@ -79,7 +82,7 @@ public class Config {
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
         DeusExMobHandler.reload(DEUS_EX_MOBS.get());
-        deusMode = DEUS_MODE.get();
+        deusModeEnum = DEUS_MODE.get();
         debugMode = DEBUG_MODE.get();
         showIcon = SHOW_ICON.get();
 
@@ -100,7 +103,7 @@ public class Config {
      */
     public static boolean isDeusExMob(EntityType<?> entityType) {
         boolean inList = DeusExMobHandler.matches(entityType);
-        return switch (deusMode) {
+        return switch (deusModeEnum) {
             case WHITELIST -> inList;
             case BLACKLIST -> !inList;
         };

@@ -83,9 +83,15 @@ public class DeathEvents {
         if (!player.hasEffect(EffectRegistry.DEUS_EX_MACHINA_EFFECT.get())) return;
 
         DeusExBuffsHelper.withBuffsForMob(player, entity, (buff, key) -> {
-            if (Config.resistanceReset) buff.setResistance(key, Config.minResistance);
-            if (Config.attackBoostReset) buff.setStrength(key, Config.minAttackBoost);
-            debug("Player " + player.getName().getString() + " killed Deus Ex Machina mob " + entity.getType() + ". Resistance and Attack Boost for this mob reset to minimum.");
+            switch(Config.resistanceReset) {
+                case FULL -> buff.setResistance(key, Config.minResistance);
+                case PARTIAL -> buff.setResistance(key, Math.max(Config.minResistance, buff.getResistance(key) - Config.resistanceIncrease));
+            }
+            switch(Config.attackBoostReset) {
+                case FULL -> buff.setStrength(key, Config.minAttackBoost);
+                case PARTIAL -> buff.setStrength(key, Math.max(Config.minAttackBoost, buff.getStrength(key) - Config.attackBoostIncrease));
+            }
+            debug("Player " + player.getName().getString() + " killed Deus Ex Machina mob " + entity.getType() + ". Resistance: " + buff.getResistance(key) + ", Attack Boost: " + buff.getStrength(key));
         });
     }
 

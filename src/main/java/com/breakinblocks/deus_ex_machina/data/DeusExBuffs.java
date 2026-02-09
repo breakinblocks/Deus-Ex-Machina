@@ -34,12 +34,11 @@ public class DeusExBuffs implements IDeusExBuffs {
 
     @Override
     public void setResistance(ResourceLocation mob, int amount) {
-        int currentValue = this.resistances.getOrDefault(mob, 0);
-        if (currentValue + amount > Config.maxResistance) {
+        if (amount > Config.maxResistance) {
             this.resistances.put(mob, Config.maxResistance);
             return;
         }
-        if (currentValue + amount < Config.minResistance) {
+        if (amount < Config.minResistance) {
             this.resistances.put(mob, Config.minResistance);
             return;
         }
@@ -63,12 +62,11 @@ public class DeusExBuffs implements IDeusExBuffs {
 
     @Override
     public void setStrength(ResourceLocation mob, int amount) {
-        int currentValue = this.strengths.getOrDefault(mob, 0);
-        if (currentValue + amount > Config.maxAttackBoost) {
+        if (amount > Config.maxAttackBoost) {
             this.strengths.put(mob, Config.maxAttackBoost);
             return;
         }
-        if (currentValue + amount < Config.minAttackBoost) {
+        if (amount < Config.minAttackBoost) {
             this.strengths.put(mob, Config.minAttackBoost);
             return;
         }
