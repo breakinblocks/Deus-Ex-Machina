@@ -41,6 +41,7 @@ public class DeathEvents {
 
     private static void handlePlayerDeath(Player player, DamageSource source) {
         LivingEntity killer = source.getEntity() instanceof LivingEntity ? (LivingEntity) source.getEntity() : null;
+        if (player.getServer().isHardcore()) return;
         if (killer == null) {
             DeusExMachina.LOGGER.info("[DeathEvents] Early return: killer is null");
             return;
