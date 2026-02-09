@@ -1,7 +1,6 @@
 package com.breakinblocks.deus_ex_machina.mixin;
 
 import com.breakinblocks.deus_ex_machina.client.DeathScreenData;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.client.gui.screens.Screen;

@@ -21,8 +21,9 @@ public class Config {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
     private static final ModConfigSpec.ConfigValue<List<? extends String>> DEUS_EX_MOBS = BUILDER
-            .comment("A List of mobs that are considered 'Deus Ex Machina' mobs. Supports exact matches (minecraft:zombie) or regex patterns wrapped in slashes (/minecraft:.*/)")
-            .defineListAllowEmpty("deusExMobs", List.of("minecraft:ender_dragon", "minecraft:wither", "minecraft:warden"), Config::validateMobPattern);
+            .comment("A List of mobs that are considered 'Deus Ex Machina' mobs.",
+                    "Supports: exact matches (minecraft:zombie), regex patterns wrapped in slashes (/minecraft:.*/), or entity tags prefixed with # (#ftb:bosses)")
+            .defineListAllowEmpty("deusExMobs", List.of("minecraft:ender_dragon", "minecraft:wither", "minecraft:warden", "#minecraft:undead"), Config::validateMobPattern);
 
     private static final ModConfigSpec.EnumValue<DeusModeEnum> DEUS_MODE = BUILDER
             .defineEnum("deusMode", WHITELIST);
@@ -79,10 +80,16 @@ public class Config {
 
     private static boolean validateMobPattern(final Object obj) {
         if (!(obj instanceof String pattern)) return false;
+        // Entity tags prefixed with # - validate ResourceLocation format (tags can't be validated at config load)
+        if (pattern.startsWith("#")) {
+            String tagId = pattern.substring(1);
+            return ResourceLocation.tryParse(tagId) != null;
+        }
         // Regex patterns wrapped in slashes - just check it's not empty
         if (pattern.startsWith("/") && pattern.endsWith("/")) {
             return pattern.length() > 2;
         }
+        // Exact entity type match
         ResourceLocation loc = ResourceLocation.tryParse(pattern);
         return loc != null && BuiltInRegistries.ENTITY_TYPE.containsKey(loc);
     }

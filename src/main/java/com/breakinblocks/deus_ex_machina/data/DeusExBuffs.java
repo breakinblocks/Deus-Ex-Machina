@@ -3,7 +3,6 @@ package com.breakinblocks.deus_ex_machina.data;
 import com.breakinblocks.deus_ex_machina.Config;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.common.util.INBTSerializable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnknownNullability;
@@ -12,8 +11,8 @@ import java.util.HashMap;
 
 public class DeusExBuffs implements IDeusExBuffs, INBTSerializable<CompoundTag> {
     private boolean enabled = false;
-    private HashMap<ResourceLocation, Integer> resistances = new HashMap<>();
-    private HashMap<ResourceLocation, Integer> strengths = new HashMap<>();
+    private HashMap<String, Integer> resistances = new HashMap<>();
+    private HashMap<String, Integer> strengths = new HashMap<>();
 
     @Override
     public boolean isEnabled() {
@@ -26,17 +25,17 @@ public class DeusExBuffs implements IDeusExBuffs, INBTSerializable<CompoundTag> 
     }
 
     @Override
-    public HashMap<ResourceLocation, Integer> getResistances() {
+    public HashMap<String, Integer> getResistances() {
         return resistances;
     }
 
     @Override
-    public int getResistance(ResourceLocation mob) {
+    public int getResistance(String mob) {
         return this.resistances.getOrDefault(mob, 0);
     }
 
     @Override
-    public void setResistance(ResourceLocation mob, int amount) {
+    public void setResistance(String mob, int amount) {
         int currentValue = this.resistances.getOrDefault(mob, 0);
         if (currentValue + amount > Config.maxResistance) {
             this.resistances.put(mob, Config.maxResistance);
@@ -50,22 +49,22 @@ public class DeusExBuffs implements IDeusExBuffs, INBTSerializable<CompoundTag> 
     }
 
     @Override
-    public void addResistance(ResourceLocation mob, int amount) {
+    public void addResistance(String mob, int amount) {
         setResistance(mob, resistances.getOrDefault(mob, 0) + amount);
     }
 
     @Override
-    public HashMap<ResourceLocation, Integer> getStrengths() {
+    public HashMap<String, Integer> getStrengths() {
         return strengths;
     }
 
     @Override
-    public int getStrength(ResourceLocation mob) {
+    public int getStrength(String mob) {
         return this.strengths.getOrDefault(mob, 0);
     }
 
     @Override
-    public void setStrength(ResourceLocation mob, int amount) {
+    public void setStrength(String mob, int amount) {
         if (amount > Config.maxAttackBoost) {
             this.strengths.put(mob, Config.maxAttackBoost);
             return;
@@ -78,19 +77,19 @@ public class DeusExBuffs implements IDeusExBuffs, INBTSerializable<CompoundTag> 
     }
 
     @Override
-    public void addStrength(ResourceLocation mob, int amount) {
+    public void addStrength(String mob, int amount) {
         setStrength(mob, strengths.getOrDefault(mob, 0) + amount);
     }
 
     @Override
     public void saveNBTData(CompoundTag nbt) {
         CompoundTag resistancesTag = new CompoundTag();
-        for (ResourceLocation mob : resistances.keySet()) {
-            resistancesTag.putInt(mob.toString(), resistances.get(mob));
+        for (String mob : resistances.keySet()) {
+            resistancesTag.putInt(mob, resistances.get(mob));
         }
         CompoundTag strengthsTag = new CompoundTag();
-        for (ResourceLocation mob : strengths.keySet()) {
-            strengthsTag.putInt(mob.toString(), strengths.get(mob));
+        for (String mob : strengths.keySet()) {
+            strengthsTag.putInt(mob, strengths.get(mob));
         }
         nbt.putBoolean("enabled", enabled);
         nbt.put("resistances", resistancesTag);
@@ -101,15 +100,13 @@ public class DeusExBuffs implements IDeusExBuffs, INBTSerializable<CompoundTag> 
     public void loadNBTData(CompoundTag nbt) {
         CompoundTag resistancesTag = nbt.getCompound("resistances");
         for (String key : resistancesTag.getAllKeys()) {
-            ResourceLocation mob = ResourceLocation.tryParse(key);
             int resistance = resistancesTag.getInt(key);
-            this.resistances.put(mob, resistance);
+            this.resistances.put(key, resistance);
         }
         CompoundTag strengthsTag = nbt.getCompound("strengths");
         for (String key : strengthsTag.getAllKeys()) {
-            ResourceLocation mob = ResourceLocation.tryParse(key);
             int strength = strengthsTag.getInt(key);
-            this.strengths.put(mob, strength);
+            this.strengths.put(key, strength);
         }
         this.enabled = nbt.getBoolean("enabled");
     }
