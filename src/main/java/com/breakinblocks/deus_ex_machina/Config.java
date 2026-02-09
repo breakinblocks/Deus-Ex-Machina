@@ -22,7 +22,10 @@ public class Config {
 
 
 
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> DEUS_EX_MOBS = BUILDER.comment("A List of mobs that are considered 'Deus Ex Machina' mobs. Supports exact matches (minecraft:zombie) or regex patterns wrapped in slashes (/minecraft:.*/)").defineListAllowEmpty("deusExMobs", List.of("minecraft:ender_dragon", "minecraft:wither", "minecraft:warden"), Config::validateMobPattern);
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> DEUS_EX_MOBS = BUILDER
+            .comment("A List of mobs that are considered 'Deus Ex Machina' mobs.",
+                    "Supports: exact matches (minecraft:zombie), regex patterns wrapped in slashes (/minecraft:.*/), or entity tags prefixed with # (#minecraft:undead)")
+            .defineListAllowEmpty("deusExMobs", List.of("minecraft:ender_dragon", "minecraft:wither", "minecraft:warden"), Config::validateMobPattern);
     private static final ForgeConfigSpec.EnumValue<DeusModeEnum> DEUS_MODE = BUILDER.defineEnum("deusMode", WHITELIST);
     private static final ForgeConfigSpec.BooleanValue SHOW_ICON = BUILDER.comment("Show Deus Ex Machina icon on the player's HUD when the effect is active.").define("showIcon", true);
     private static final ForgeConfigSpec.BooleanValue DEBUG_MODE = BUILDER.comment("Enable debug mode for additional logging.").define("debugMode", false);
@@ -72,10 +75,16 @@ public class Config {
 
     private static boolean validateMobPattern(final Object obj) {
         if (!(obj instanceof String pattern)) return false;
+        // Entity tags prefixed with # - validate ResourceLocation format (tags can't be validated at config load)
+        if (pattern.startsWith("#")) {
+            String tagId = pattern.substring(1);
+            return ResourceLocation.tryParse(tagId) != null;
+        }
         // Regex patterns wrapped in slashes - just check it's not empty
         if (pattern.startsWith("/") && pattern.endsWith("/")) {
             return pattern.length() > 2;
         }
+        // Exact entity type match
         return ForgeRegistries.ENTITY_TYPES.containsKey(ResourceLocation.tryParse(pattern));
     }
 

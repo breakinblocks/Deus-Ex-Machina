@@ -1,10 +1,9 @@
 package com.breakinblocks.deus_ex_machina.data;
 
-import net.minecraft.resources.ResourceLocation;
+import com.breakinblocks.deus_ex_machina.handler.DeusExMobHandler;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.common.util.NonNullConsumer;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -29,32 +28,34 @@ public class DeusExBuffsHelper {
     }
 
     /**
-     * Get mob key (ResourceLocation) from entity type.
+     * Get group key for an entity type.
+     * Returns the tag (e.g., "#minecraft:undead") if the entity matches a tag,
+     * otherwise returns the entity's ResourceLocation string.
      */
-    public static Optional<ResourceLocation> getMobKey(EntityType<?> entityType) {
-        return Optional.ofNullable(ForgeRegistries.ENTITY_TYPES.getKey(entityType));
+    public static Optional<String> getGroupKey(EntityType<?> entityType) {
+        return Optional.ofNullable(DeusExMobHandler.getGroupKey(entityType));
     }
 
     /**
-     * Get mob key from a living entity.
+     * Get group key from a living entity.
      */
-    public static Optional<ResourceLocation> getMobKey(LivingEntity entity) {
-        return getMobKey(entity.getType());
+    public static Optional<String> getGroupKey(LivingEntity entity) {
+        return getGroupKey(entity.getType());
     }
 
     /**
-     * Execute action with buffs and mob key if both are present.
+     * Execute action with buffs and group key if both are present.
      */
-    public static void withBuffsForMob(LivingEntity player, EntityType<?> mobType, BiConsumer<IDeusExBuffs, ResourceLocation> action) {
-        getMobKey(mobType).ifPresent(key ->
+    public static void withBuffsForMob(LivingEntity player, EntityType<?> mobType, BiConsumer<IDeusExBuffs, String> action) {
+        getGroupKey(mobType).ifPresent(key ->
                 withBuffs(player, buff -> action.accept(buff, key))
         );
     }
 
     /**
-     * Execute action with buffs and mob key if both are present.
+     * Execute action with buffs and group key if both are present.
      */
-    public static void withBuffsForMob(LivingEntity player, LivingEntity mob, BiConsumer<IDeusExBuffs, ResourceLocation> action) {
+    public static void withBuffsForMob(LivingEntity player, LivingEntity mob, BiConsumer<IDeusExBuffs, String> action) {
         withBuffsForMob(player, mob.getType(), action);
     }
 

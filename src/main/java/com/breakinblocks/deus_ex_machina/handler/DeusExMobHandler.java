@@ -1,6 +1,8 @@
 package com.breakinblocks.deus_ex_machina.handler;
 
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -15,15 +17,26 @@ import java.util.regex.PatternSyntaxException;
 public class DeusExMobHandler {
     private static Set<EntityType<?>> exactMatches = new HashSet<>();
     private static Set<Pattern> regexPatterns = new HashSet<>();
+    private static Set<TagKey<EntityType<?>>> entityTags = new HashSet<>();
     private static final Map<EntityType<?>, Boolean> cache = new HashMap<>();
 
     public static void reload(List<? extends String> entries) {
         exactMatches.clear();
         regexPatterns.clear();
+        entityTags.clear();
         cache.clear();
 
         for (String entry : entries) {
-            if (entry.startsWith("/") && entry.endsWith("/") && entry.length() > 2) {
+            if (entry.startsWith("#")) {
+                // Entity tag format: #namespace:tagname
+                String tagId = entry.substring(1);
+                ResourceLocation tagLocation = ResourceLocation.tryParse(tagId);
+                if (tagLocation != null) {
+                    entityTags.add(TagKey.create(Registries.ENTITY_TYPE, tagLocation));
+                } else {
+                    System.err.println("[DeusExMachina] Invalid tag format: " + entry);
+                }
+            } else if (entry.startsWith("/") && entry.endsWith("/") && entry.length() > 2) {
                 String regex = entry.substring(1, entry.length() - 1);
                 try {
                     regexPatterns.add(Pattern.compile(regex));
@@ -48,15 +61,63 @@ public class DeusExMobHandler {
 
     private static boolean compute(EntityType<?> entityType) {
         if (exactMatches.contains(entityType)) return true;
-        if (regexPatterns.isEmpty()) return false;
 
-        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entityType);
-        if (id == null) return false;
-
-        String fullId = id.toString();
-        for (Pattern pattern : regexPatterns) {
-            if (pattern.matcher(fullId).matches()) return true;
+        // Check entity tags
+        if (!entityTags.isEmpty()) {
+            for (TagKey<EntityType<?>> tag : entityTags) {
+                if (entityType.is(tag)) return true;
+            }
         }
+
+        // Check regex patterns
+        if (!regexPatterns.isEmpty()) {
+            ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entityType);
+            if (id != null) {
+                String fullId = id.toString();
+                for (Pattern pattern : regexPatterns) {
+                    if (pattern.matcher(fullId).matches()) return true;
+                }
+            }
+        }
+
         return false;
+    }
+
+    /**
+     * Gets the group key for an entity type.
+     * If the entity matches a tag, returns the tag (e.g., "#minecraft:undead").
+     * If it matches an exact entry or regex, returns the entity's ResourceLocation.
+     * Returns null if the entity doesn't match any config entry.
+     */
+    public static String getGroupKey(EntityType<?> entityType) {
+        // Check exact matches first - return entity ID
+        if (exactMatches.contains(entityType)) {
+            ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entityType);
+            return id != null ? id.toString() : null;
+        }
+
+        // Check entity tags - return tag key
+        if (!entityTags.isEmpty()) {
+            for (TagKey<EntityType<?>> tag : entityTags) {
+                if (entityType.is(tag)) {
+                    return "#" + tag.location().toString();
+                }
+            }
+        }
+
+        // Check regex patterns - return entity ID
+        if (!regexPatterns.isEmpty()) {
+            ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entityType);
+            if (id != null) {
+                String fullId = id.toString();
+                for (Pattern pattern : regexPatterns) {
+                    if (pattern.matcher(fullId).matches()) {
+                        return fullId;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 }

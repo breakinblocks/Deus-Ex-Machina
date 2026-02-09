@@ -6,6 +6,7 @@ import com.breakinblocks.deus_ex_machina.data.DeusExBuffsHelper;
 import com.breakinblocks.deus_ex_machina.network.DeathBuffPacket;
 import com.breakinblocks.deus_ex_machina.network.NetworkHandler;
 import com.breakinblocks.deus_ex_machina.registry.EffectRegistry;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -16,6 +17,7 @@ import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import static com.breakinblocks.deus_ex_machina.DeusExMachina.debug;
 import static com.breakinblocks.deus_ex_machina.registry.EffectRegistry.DEUS_EX_MACHINA_EFFECT;
@@ -51,6 +53,8 @@ public class DeathEvents {
             return;
         }
 
+        ResourceLocation killerTypeId = ForgeRegistries.ENTITY_TYPES.getKey(killer.getType());
+
         DeusExBuffsHelper.withBuffsForMob(player, killer, (buff, key) -> {
             int resistanceGain = Config.resistanceIncrease;
             int attackBoostGain = Config.attackBoostIncrease;
@@ -66,10 +70,10 @@ public class DeathEvents {
             debug("New Attack Boost for " + key + ": " + newAttackBoost);
 
             if (player instanceof ServerPlayer serverPlayer) {
-                DeusExMachina.LOGGER.info("[DeathEvents] Sending DeathBuffPacket to {} for mob {}",
-                        serverPlayer.getName().getString(), key);
+                DeusExMachina.LOGGER.info("[DeathEvents] Sending DeathBuffPacket to {} for mob {} (group: {})",
+                        serverPlayer.getName().getString(), killerTypeId, key);
                 NetworkHandler.sendToPlayer(serverPlayer, new DeathBuffPacket(
-                        key, resistanceGain, attackBoostGain, newResistance, newAttackBoost
+                        killerTypeId, resistanceGain, attackBoostGain, newResistance, newAttackBoost
                 ));
             }
         });
