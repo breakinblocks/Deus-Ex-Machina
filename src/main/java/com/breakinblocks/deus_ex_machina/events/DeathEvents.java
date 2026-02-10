@@ -2,8 +2,11 @@ package com.breakinblocks.deus_ex_machina.events;
 
 import com.breakinblocks.deus_ex_machina.Config;
 import com.breakinblocks.deus_ex_machina.DeusExMachina;
+import com.breakinblocks.deus_ex_machina.data.DeusExBuffsAttachment;
 import com.breakinblocks.deus_ex_machina.data.DeusExBuffsHelper;
 import com.breakinblocks.deus_ex_machina.data.DeusExMobConfigManager;
+import com.breakinblocks.deus_ex_machina.data.DeusExMobData;
+import com.breakinblocks.deus_ex_machina.enums.TypeEnum;
 import com.breakinblocks.deus_ex_machina.network.DeathBuffPayload;
 import com.breakinblocks.deus_ex_machina.network.NetworkHandler;
 import com.breakinblocks.deus_ex_machina.registry.EffectRegistry;
@@ -55,32 +58,57 @@ public class DeathEvents {
 
         ResourceLocation killerTypeId = BuiltInRegistries.ENTITY_TYPE.getKey(killer.getType());
 
-        DeusExBuffsHelper.withBuffsForMob(player, killer, (buff, key) -> {
-            boolean resistanceEnabled = DeusExMobConfigManager.isResistanceEnabled(key);
-            boolean attackEnabled = DeusExMobConfigManager.isAttackEnabled(key);
+        DeusExBuffsHelper.withBuffsForMob(player, killer, (buff, groupKey) -> {
+            TypeEnum trackingType = DeusExMobConfigManager.getType(groupKey);
+
+            boolean resistanceEnabled = DeusExMobConfigManager.isResistanceEnabled(groupKey);
+            boolean attackEnabled = DeusExMobConfigManager.isAttackEnabled(groupKey);
             int resistanceGain = 0;
             int attackBoostGain = 0;
+            int newResistance = 0;
+            int newAttackBoost = 0;
 
-            if (resistanceEnabled) {
-                resistanceGain = DeusExMobConfigManager.getResistanceIncrease(key);
-                buff.addResistance(key, resistanceGain);
+            if (trackingType == TypeEnum.INSTANCE) {
+                // Instance mode: store buff on the mob's attachment
+                DeusExMobData mobData = killer.getData(DeusExBuffsAttachment.DEUS_EX_MOB_DATA);
+
+                if (resistanceEnabled) {
+                    resistanceGain = DeusExMobConfigManager.getResistanceIncrease(groupKey);
+                    int maxRes = DeusExMobConfigManager.getResistanceMax(groupKey);
+                    mobData.addResistance(player.getUUID(), resistanceGain, maxRes);
+                    newResistance = mobData.getResistance(player.getUUID());
+                }
+
+                if (attackEnabled) {
+                    attackBoostGain = DeusExMobConfigManager.getAttackIncrease(groupKey);
+                    int maxAtk = DeusExMobConfigManager.getAttackMax(groupKey);
+                    mobData.addStrength(player.getUUID(), attackBoostGain, maxAtk);
+                    newAttackBoost = mobData.getStrength(player.getUUID());
+                }
+
+                debug("Instance mode: Stored buff on mob " + killer.getUUID() + " for player " + player.getName().getString());
+            } else {
+                // Entity type mode: store buff on the player
+                if (resistanceEnabled) {
+                    resistanceGain = DeusExMobConfigManager.getResistanceIncrease(groupKey);
+                    buff.addResistance(groupKey, resistanceGain);
+                    newResistance = buff.getResistance(groupKey);
+                }
+
+                if (attackEnabled) {
+                    attackBoostGain = DeusExMobConfigManager.getAttackIncrease(groupKey);
+                    buff.addStrength(groupKey, attackBoostGain);
+                    newAttackBoost = buff.getStrength(groupKey);
+                }
             }
-
-            if (attackEnabled) {
-                attackBoostGain = DeusExMobConfigManager.getAttackIncrease(key);
-                buff.addStrength(key, attackBoostGain);
-            }
-
-            int newResistance = buff.getResistance(key);
-            int newAttackBoost = buff.getStrength(key);
 
             debug("Player " + player.getName().getString() + " killed by Deus Ex Machina mob " + killer.getType() + ". Buffs updated.");
-            debug("Resistance for " + key + ": " + newResistance + " (+" + resistanceGain + ")");
-            debug("Attack Boost for " + key + ": " + newAttackBoost + " (+" + attackBoostGain + ")");
+            debug("Resistance: " + newResistance + " (+" + resistanceGain + ")");
+            debug("Attack Boost: " + newAttackBoost + " (+" + attackBoostGain + ")");
 
             if (player instanceof ServerPlayer serverPlayer) {
                 DeusExMachina.LOGGER.info("[DeathEvents] Sending DeathBuffPayload to {} for mob {} (group: {})",
-                        serverPlayer.getName().getString(), killerTypeId, key);
+                        serverPlayer.getName().getString(), killerTypeId, groupKey);
                 NetworkHandler.sendToPlayer(serverPlayer, new DeathBuffPayload(
                         killerTypeId, resistanceEnabled, attackEnabled,
                         resistanceGain, attackBoostGain, newResistance, newAttackBoost
@@ -91,33 +119,48 @@ public class DeathEvents {
 
     private static void handleMobDeath(LivingEntity entity, DamageSource source) {
         if (!Config.isDeusExMob(entity.getType())) return;
+
+        DeusExBuffsHelper.getGroupKey(entity).ifPresent(groupKey -> {
+            TypeEnum trackingType = DeusExMobConfigManager.getType(groupKey);
+
+            if (trackingType == TypeEnum.INSTANCE) {
+                // Instance mode: mob dies, attachment dies with it - nothing to do!
+                debug("Instance mode: Mob " + entity.getUUID() + " died, buffs removed automatically");
+            } else {
+                // Entity type mode: reset buffs for the killing player
+                handleEntityTypeModeMobDeath(entity, source, groupKey);
+            }
+        });
+    }
+
+    private static void handleEntityTypeModeMobDeath(LivingEntity entity, DamageSource source, String groupKey) {
         if (source.getEntity() == null) return;
         if (!(source.getEntity() instanceof Player player)) return;
-
         if (!player.hasEffect(EffectRegistry.DEUS_EX_MACHINA_EFFECT)) return;
 
-        DeusExBuffsHelper.withBuffsForMob(player, entity, (buff, key) -> {
-            if (DeusExMobConfigManager.isResistanceEnabled(key)) {
-                int resMin = DeusExMobConfigManager.getResistanceMin(key);
-                int resIncrease = DeusExMobConfigManager.getResistanceIncrease(key);
-                switch(DeusExMobConfigManager.getResistanceReset(key)) {
-                    case FULL -> buff.setResistance(key, resMin);
-                    case PARTIAL -> buff.setResistance(key, Math.max(resMin, buff.getResistance(key) - resIncrease));
+        DeusExBuffsHelper.withBuffs(player, buff -> {
+            if (DeusExMobConfigManager.isResistanceEnabled(groupKey)) {
+                int resMin = DeusExMobConfigManager.getResistanceMin(groupKey);
+                int resIncrease = DeusExMobConfigManager.getResistanceIncrease(groupKey);
+                switch (DeusExMobConfigManager.getResistanceReset(groupKey)) {
+                    case FULL -> buff.setResistance(groupKey, resMin);
+                    case PARTIAL -> buff.setResistance(groupKey, Math.max(resMin, buff.getResistance(groupKey) - resIncrease));
                     case NONE -> {} // Keep current value
                 }
             }
 
-            if (DeusExMobConfigManager.isAttackEnabled(key)) {
-                int atkMin = DeusExMobConfigManager.getAttackMin(key);
-                int atkIncrease = DeusExMobConfigManager.getAttackIncrease(key);
-                switch(DeusExMobConfigManager.getAttackReset(key)) {
-                    case FULL -> buff.setStrength(key, atkMin);
-                    case PARTIAL -> buff.setStrength(key, Math.max(atkMin, buff.getStrength(key) - atkIncrease));
+            if (DeusExMobConfigManager.isAttackEnabled(groupKey)) {
+                int atkMin = DeusExMobConfigManager.getAttackMin(groupKey);
+                int atkIncrease = DeusExMobConfigManager.getAttackIncrease(groupKey);
+                switch (DeusExMobConfigManager.getAttackReset(groupKey)) {
+                    case FULL -> buff.setStrength(groupKey, atkMin);
+                    case PARTIAL -> buff.setStrength(groupKey, Math.max(atkMin, buff.getStrength(groupKey) - atkIncrease));
                     case NONE -> {} // Keep current value
                 }
             }
 
-            debug("Player " + player.getName().getString() + " killed Deus Ex Machina mob " + entity.getType() + ". Resistance: " + buff.getResistance(key) + ", Attack Boost: " + buff.getStrength(key));
+            debug("Player " + player.getName().getString() + " killed Deus Ex Machina mob " + entity.getType() +
+                    ". Resistance: " + buff.getResistance(groupKey) + ", Attack Boost: " + buff.getStrength(groupKey));
         });
     }
 

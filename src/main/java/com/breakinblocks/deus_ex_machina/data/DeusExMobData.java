@@ -103,8 +103,9 @@ public class DeusExMobData implements INBTSerializable<CompoundTag> {
         ListTag playerList = new ListTag();
 
         for (Map.Entry<UUID, PlayerBuffData> entry : playerBuffs.entrySet()) {
-            CompoundTag playerEntry = entry.getValue().toNBT();
+            CompoundTag playerEntry = new CompoundTag();
             playerEntry.putUUID("uuid", entry.getKey());
+            playerEntry.put("data", entry.getValue().toNBT());
             playerList.add(playerEntry);
         }
 
@@ -119,9 +120,9 @@ public class DeusExMobData implements INBTSerializable<CompoundTag> {
         ListTag playerList = nbt.getList("players", Tag.TAG_COMPOUND);
         for (int i = 0; i < playerList.size(); i++) {
             CompoundTag entry = playerList.getCompound(i);
-            if (entry.hasUUID("uuid")) {
+            if (entry.hasUUID("uuid") && entry.contains("data")) {
                 UUID uuid = entry.getUUID("uuid");
-                PlayerBuffData data = PlayerBuffData.fromNBT(entry);
+                PlayerBuffData data = PlayerBuffData.fromNBT(entry.getCompound("data"));
                 if (!data.isEmpty()) {
                     playerBuffs.put(uuid, data);
                 }
