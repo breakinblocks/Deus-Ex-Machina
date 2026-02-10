@@ -1,0 +1,16 @@
+{
+    "_comment": "Custom buff settings for the Ender Dragon.",
+    "target": "minecraft:ender_dragon",
+    "resistance": {
+        "min": 0,
+        "max": 100,
+        "increase": 10,
+        "reset": "NONE"
+    },
+    "attack": {
+        "min": 0,
+        "max": 100,
+        "increase": 10,
+        "reset": "NONE"
+    }
+}

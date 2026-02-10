@@ -1,0 +1,16 @@
+{
+    "_comment": "Custom buff settings for the Wither boss.",
+    "target": "minecraft:wither",
+    "resistance": {
+        "min": 0,
+        "max": 100,
+        "increase": 5,
+        "reset": "PARTIAL"
+    },
+    "attack": {
+        "min": 0,
+        "max": 100,
+        "increase": 5,
+        "reset": "PARTIAL"
+    }
+}

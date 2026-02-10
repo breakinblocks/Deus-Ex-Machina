@@ -1,0 +1,16 @@
+{
+    "_comment": "Custom buff settings for the Warden.",
+    "target": "minecraft:warden",
+    "resistance": {
+        "min": 0,
+        "max": 90,
+        "increase": 3,
+        "reset": "FULL"
+    },
+    "attack": {
+        "min": 0,
+        "max": 50,
+        "increase": 2,
+        "reset": "FULL"
+    }
+}
