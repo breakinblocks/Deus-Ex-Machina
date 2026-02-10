@@ -24,7 +24,7 @@ public abstract class DeathScreenMixin extends Screen {
         if (!DeathScreenData.hasData()) return;
 
         int centerX = this.width / 2;
-        int startY = 10;
+        int currentY = 10;
 
         EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.get(DeathScreenData.getKillerType());
         Component mobName = entityType.getDescription();
@@ -32,18 +32,24 @@ public abstract class DeathScreenMixin extends Screen {
         Component header = Component.translatable("deus_ex_machina.death_screen.header", mobName)
                 .withStyle(style -> style.withColor(0xFFAA00));
 
-        Component resistanceLine = Component.translatable("deus_ex_machina.death_screen.resistance", DeathScreenData.getResistanceGain())
-                .withStyle(style -> style.withColor(0x55FF55))
-                .append(Component.translatable("deus_ex_machina.death_screen.resistance.now", DeathScreenData.getNewResistance())
-                        .withStyle(style -> style.withColor(0xAAAAAA)));
+        graphics.drawCenteredString(this.font, header, centerX, currentY, 0xFFFFFF);
+        currentY += 12;
 
-        Component attackLine = Component.translatable("deus_ex_machina.death_screen.attack", DeathScreenData.getAttackBoostGain())
-                .withStyle(style -> style.withColor(0xFF5555))
-                .append(Component.translatable("deus_ex_machina.death_screen.attack.now", DeathScreenData.getNewAttackBoost())
-                        .withStyle(style -> style.withColor(0xAAAAAA)));
+        if (DeathScreenData.isResistanceEnabled()) {
+            Component resistanceLine = Component.translatable("deus_ex_machina.death_screen.resistance", DeathScreenData.getResistanceGain())
+                    .withStyle(style -> style.withColor(0x55FF55))
+                    .append(Component.translatable("deus_ex_machina.death_screen.resistance.now", DeathScreenData.getNewResistance())
+                            .withStyle(style -> style.withColor(0xAAAAAA)));
+            graphics.drawCenteredString(this.font, resistanceLine, centerX, currentY, 0xFFFFFF);
+            currentY += 12;
+        }
 
-        graphics.drawCenteredString(this.font, header, centerX, startY, 0xFFFFFF);
-        graphics.drawCenteredString(this.font, resistanceLine, centerX, startY + 12, 0xFFFFFF);
-        graphics.drawCenteredString(this.font, attackLine, centerX, startY + 24, 0xFFFFFF);
+        if (DeathScreenData.isAttackEnabled()) {
+            Component attackLine = Component.translatable("deus_ex_machina.death_screen.attack", DeathScreenData.getAttackBoostGain())
+                    .withStyle(style -> style.withColor(0xFF5555))
+                    .append(Component.translatable("deus_ex_machina.death_screen.attack.now", DeathScreenData.getNewAttackBoost())
+                            .withStyle(style -> style.withColor(0xAAAAAA)));
+            graphics.drawCenteredString(this.font, attackLine, centerX, currentY, 0xFFFFFF);
+        }
     }
 }

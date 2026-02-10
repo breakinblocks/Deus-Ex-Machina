@@ -7,13 +7,18 @@ import net.minecraft.resources.ResourceLocation;
  */
 public class DeathScreenData {
     private static ResourceLocation killerType = null;
+    private static boolean resistanceEnabled = false;
+    private static boolean attackEnabled = false;
     private static int resistanceGain = 0;
     private static int attackBoostGain = 0;
     private static int newResistance = 0;
     private static int newAttackBoost = 0;
 
-    public static void set(ResourceLocation killer, int resGain, int atkGain, int newRes, int newAtk) {
+    public static void set(ResourceLocation killer, boolean resEnabled, boolean atkEnabled,
+                           int resGain, int atkGain, int newRes, int newAtk) {
         killerType = killer;
+        resistanceEnabled = resEnabled;
+        attackEnabled = atkEnabled;
         resistanceGain = resGain;
         attackBoostGain = atkGain;
         newResistance = newRes;
@@ -22,6 +27,8 @@ public class DeathScreenData {
 
     public static void clear() {
         killerType = null;
+        resistanceEnabled = false;
+        attackEnabled = false;
         resistanceGain = 0;
         attackBoostGain = 0;
         newResistance = 0;
@@ -34,6 +41,14 @@ public class DeathScreenData {
 
     public static ResourceLocation getKillerType() {
         return killerType;
+    }
+
+    public static boolean isResistanceEnabled() {
+        return resistanceEnabled;
+    }
+
+    public static boolean isAttackEnabled() {
+        return attackEnabled;
     }
 
     public static int getResistanceGain() {

@@ -11,9 +11,12 @@ public class ClientPacketHandler {
 
     public static void handleDeathBuff(DeathBuffPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            DeusExMachina.LOGGER.info("[ClientPacketHandler] Received DeathBuffPayload for {}", payload.killerType());
+            DeusExMachina.LOGGER.info("[ClientPacketHandler] Received DeathBuffPayload for {} (res={}, atk={})",
+                    payload.killerType(), payload.resistanceEnabled(), payload.attackEnabled());
             DeathScreenData.set(
                     payload.killerType(),
+                    payload.resistanceEnabled(),
+                    payload.attackEnabled(),
                     payload.resistanceGain(),
                     payload.attackBoostGain(),
                     payload.newResistance(),
