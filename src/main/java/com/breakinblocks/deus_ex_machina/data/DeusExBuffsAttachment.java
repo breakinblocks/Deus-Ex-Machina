@@ -15,4 +15,13 @@ public class DeusExBuffsAttachment {
             ATTACHMENT_TYPES.register("deus_ex_buffs", () ->
                     AttachmentType.serializable(DeusExBuffs::new).build()
             );
+
+    /**
+     * Attachment for mobs to track which players they have killed.
+     * Used for instance-mode buff tracking.
+     */
+    public static final Supplier<AttachmentType<DeusExMobData>> DEUS_EX_MOB_DATA =
+            ATTACHMENT_TYPES.register("deus_ex_mob_data", () ->
+                    AttachmentType.serializable(DeusExMobData::new).build()
+            );
 }
