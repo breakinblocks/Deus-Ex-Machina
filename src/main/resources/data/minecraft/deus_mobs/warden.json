@@ -1,6 +1,7 @@
 {
-    "_comment": "Custom buff settings for the Warden.",
+    "_comment": "Custom buff settings for the Warden. Uses instance mode - each warden tracks kills individually.",
     "target": "minecraft:warden",
+    "type": "instance",
     "resistance": {
         "min": 0,
         "max": 90,
