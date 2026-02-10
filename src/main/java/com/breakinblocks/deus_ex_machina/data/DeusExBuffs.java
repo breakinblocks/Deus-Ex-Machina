@@ -1,6 +1,5 @@
 package com.breakinblocks.deus_ex_machina.data;
 
-import com.breakinblocks.deus_ex_machina.Config;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.neoforged.neoforge.common.util.INBTSerializable;
@@ -36,13 +35,15 @@ public class DeusExBuffs implements IDeusExBuffs, INBTSerializable<CompoundTag> 
 
     @Override
     public void setResistance(String mob, int amount) {
-        int currentValue = this.resistances.getOrDefault(mob, 0);
-        if (currentValue + amount > Config.maxResistance) {
-            this.resistances.put(mob, Config.maxResistance);
+        int maxResistance = DeusExMobConfigManager.getResistanceMax(mob);
+        int minResistance = DeusExMobConfigManager.getResistanceMin(mob);
+
+        if (amount > maxResistance) {
+            this.resistances.put(mob, maxResistance);
             return;
         }
-        if (currentValue + amount < Config.minResistance) {
-            this.resistances.put(mob, Config.minResistance);
+        if (amount < minResistance) {
+            this.resistances.put(mob, minResistance);
             return;
         }
         this.resistances.put(mob, amount);
@@ -65,12 +66,15 @@ public class DeusExBuffs implements IDeusExBuffs, INBTSerializable<CompoundTag> 
 
     @Override
     public void setStrength(String mob, int amount) {
-        if (amount > Config.maxAttackBoost) {
-            this.strengths.put(mob, Config.maxAttackBoost);
+        int maxAttackBoost = DeusExMobConfigManager.getAttackMax(mob);
+        int minAttackBoost = DeusExMobConfigManager.getAttackMin(mob);
+
+        if (amount > maxAttackBoost) {
+            this.strengths.put(mob, maxAttackBoost);
             return;
         }
-        if (amount < Config.minAttackBoost) {
-            this.strengths.put(mob, Config.minAttackBoost);
+        if (amount < minAttackBoost) {
+            this.strengths.put(mob, minAttackBoost);
             return;
         }
         this.strengths.put(mob, amount);

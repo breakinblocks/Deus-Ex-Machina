@@ -92,7 +92,8 @@ public class DeusExMobHandler {
     /**
      * Gets the group key for an entity type.
      * If the entity matches a tag, returns the tag (e.g., "#minecraft:undead").
-     * If it matches an exact entry or regex, returns the entity's ResourceLocation.
+     * If it matches a regex, returns the regex pattern wrapped in slashes.
+     * If it matches an exact entry, returns the entity's ResourceLocation.
      * Returns null if the entity doesn't match any config entry.
      */
     public static String getGroupKey(EntityType<?> entityType) {
@@ -115,14 +116,14 @@ public class DeusExMobHandler {
             }
         }
 
-        // Check regex patterns - return entity ID
+        // Check regex patterns - return the regex pattern string (wrapped in slashes)
         if (!regexPatterns.isEmpty()) {
             ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
             if (id != null) {
                 String fullId = id.toString();
                 for (Pattern pattern : regexPatterns) {
                     if (pattern.matcher(fullId).matches()) {
-                        return fullId;
+                        return "/" + pattern.pattern() + "/";
                     }
                 }
             }
