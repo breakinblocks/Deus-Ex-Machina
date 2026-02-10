@@ -3,6 +3,7 @@ package com.breakinblocks.deus_ex_machina.data;
 import com.breakinblocks.deus_ex_machina.Config;
 import com.breakinblocks.deus_ex_machina.DeusExMachina;
 import com.breakinblocks.deus_ex_machina.enums.ResetEnum;
+import com.breakinblocks.deus_ex_machina.enums.TypeEnum;
 import com.breakinblocks.deus_ex_machina.handler.DeusExMobHandler;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -77,6 +78,25 @@ public class DeusExMobConfigManager extends SimpleJsonResourceReloadListener {
     @Nullable
     public static DeusExMobConfig getConfig(String key) {
         return MOB_CONFIGS.get(key);
+    }
+
+    /**
+     * Get the tracking type for a key.
+     * Returns ENTITY_TYPE by default if no config exists.
+     */
+    public static TypeEnum getType(String key) {
+        DeusExMobConfig config = getConfig(key);
+        if (config != null) {
+            return config.type();
+        }
+        return TypeEnum.ENTITY_TYPE;
+    }
+
+    /**
+     * Check if a key uses instance mode (each mob tracks its own kills).
+     */
+    public static boolean isInstanceMode(String key) {
+        return getType(key) == TypeEnum.INSTANCE;
     }
 
     /**
