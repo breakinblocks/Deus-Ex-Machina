@@ -1,16 +1,21 @@
 package com.breakinblocks.deus_ex_machina.mixin;
 
+import com.breakinblocks.deus_ex_machina.api.buff.BuffType;
+import com.breakinblocks.deus_ex_machina.api.registry.BuffRegistry;
 import com.breakinblocks.deus_ex_machina.client.DeathScreenData;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.Map;
 
 @Mixin(DeathScreen.class)
 public abstract class DeathScreenMixin extends Screen {
@@ -35,21 +40,37 @@ public abstract class DeathScreenMixin extends Screen {
         graphics.drawCenteredString(this.font, header, centerX, currentY, 0xFFFFFF);
         currentY += 12;
 
-        if (DeathScreenData.isResistanceEnabled()) {
-            Component resistanceLine = Component.translatable("deus_ex_machina.death_screen.resistance", DeathScreenData.getResistanceGain())
-                    .withStyle(style -> style.withColor(0x55FF55))
-                    .append(Component.translatable("deus_ex_machina.death_screen.resistance.now", DeathScreenData.getNewResistance())
-                            .withStyle(style -> style.withColor(0xAAAAAA)));
-            graphics.drawCenteredString(this.font, resistanceLine, centerX, currentY, 0xFFFFFF);
-            currentY += 12;
-        }
+        // Iterate over all buff changes
+        for (Map.Entry<ResourceLocation, int[]> entry : DeathScreenData.getBuffChanges().entrySet()) {
+            ResourceLocation buffId = entry.getKey();
+            int gain = entry.getValue()[0];
+            int newValue = entry.getValue()[1];
 
-        if (DeathScreenData.isAttackEnabled()) {
-            Component attackLine = Component.translatable("deus_ex_machina.death_screen.attack", DeathScreenData.getAttackBoostGain())
-                    .withStyle(style -> style.withColor(0xFF5555))
-                    .append(Component.translatable("deus_ex_machina.death_screen.attack.now", DeathScreenData.getNewAttackBoost())
+            // Get buff type info from registry
+            BuffType buffType = BuffRegistry.get(buffId).orElse(null);
+            Component buffName;
+            int color;
+
+            if (buffType != null) {
+                buffName = buffType.getDisplayName();
+                color = buffType.getColor();
+            } else {
+                // Fallback for unknown buff types
+                buffName = Component.literal(buffId.toString());
+                color = 0xFFFFFFFF;
+            }
+
+            Component buffLine = Component.literal("  ")
+                    .append(buffName)
+                    .append(": +")
+                    .append(String.valueOf(gain))
+                    .append("% ")
+                    .withStyle(style -> style.withColor(color))
+                    .append(Component.literal("(now " + newValue + "%)")
                             .withStyle(style -> style.withColor(0xAAAAAA)));
-            graphics.drawCenteredString(this.font, attackLine, centerX, currentY, 0xFFFFFF);
+
+            graphics.drawCenteredString(this.font, buffLine, centerX, currentY, 0xFFFFFF);
+            currentY += 12;
         }
     }
 }

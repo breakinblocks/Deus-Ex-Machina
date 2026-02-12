@@ -2,68 +2,63 @@ package com.breakinblocks.deus_ex_machina.client;
 
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Client-side cache for displaying buff gains on the death screen.
  */
 public class DeathScreenData {
     private static ResourceLocation killerType = null;
-    private static boolean resistanceEnabled = false;
-    private static boolean attackEnabled = false;
-    private static int resistanceGain = 0;
-    private static int attackBoostGain = 0;
-    private static int newResistance = 0;
-    private static int newAttackBoost = 0;
+    private static Map<ResourceLocation, int[]> buffChanges = new HashMap<>();
 
-    public static void set(ResourceLocation killer, boolean resEnabled, boolean atkEnabled,
-                           int resGain, int atkGain, int newRes, int newAtk) {
+    public static void set(ResourceLocation killer, Map<ResourceLocation, int[]> changes) {
         killerType = killer;
-        resistanceEnabled = resEnabled;
-        attackEnabled = atkEnabled;
-        resistanceGain = resGain;
-        attackBoostGain = atkGain;
-        newResistance = newRes;
-        newAttackBoost = newAtk;
+        buffChanges = new HashMap<>(changes);
     }
 
     public static void clear() {
         killerType = null;
-        resistanceEnabled = false;
-        attackEnabled = false;
-        resistanceGain = 0;
-        attackBoostGain = 0;
-        newResistance = 0;
-        newAttackBoost = 0;
+        buffChanges.clear();
     }
 
     public static boolean hasData() {
-        return killerType != null;
+        return killerType != null && !buffChanges.isEmpty();
     }
 
     public static ResourceLocation getKillerType() {
         return killerType;
     }
 
-    public static boolean isResistanceEnabled() {
-        return resistanceEnabled;
+    /**
+     * Get all buff changes.
+     * @return Map of buff type ID to [gain, newValue]
+     */
+    public static Map<ResourceLocation, int[]> getBuffChanges() {
+        return Collections.unmodifiableMap(buffChanges);
     }
 
-    public static boolean isAttackEnabled() {
-        return attackEnabled;
+    /**
+     * Get the gain for a specific buff type.
+     */
+    public static int getGain(ResourceLocation buffTypeId) {
+        int[] values = buffChanges.get(buffTypeId);
+        return values != null ? values[0] : 0;
     }
 
-    public static int getResistanceGain() {
-        return resistanceGain;
+    /**
+     * Get the new value for a specific buff type.
+     */
+    public static int getNewValue(ResourceLocation buffTypeId) {
+        int[] values = buffChanges.get(buffTypeId);
+        return values != null ? values[1] : 0;
     }
 
-    public static int getAttackBoostGain() {
-        return attackBoostGain;
-    }
-
-    public static int getNewResistance() {
-        return newResistance;
-    }
-
-    public static int getNewAttackBoost() {
-        return newAttackBoost;
+    /**
+     * Check if there are changes for a specific buff type.
+     */
+    public static boolean hasChanges(ResourceLocation buffTypeId) {
+        return buffChanges.containsKey(buffTypeId);
     }
 }
