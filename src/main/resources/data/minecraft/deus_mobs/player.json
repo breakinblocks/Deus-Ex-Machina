@@ -1,6 +1,6 @@
 {
-  "_comment": "Custom buff settings for the Warden. Uses instance mode - each warden tracks kills individually.",
-  "target": "minecraft:warden",
+  "_comment": "Custom buff settings for the player. Uses instance mode - each player tracks kills individually.",
+  "target": "minecraft:player",
   "type": "instance",
   "buffs": {
     "deus_ex_machina:resistance": {
