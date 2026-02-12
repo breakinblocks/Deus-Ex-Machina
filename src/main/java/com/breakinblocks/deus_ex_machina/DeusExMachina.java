@@ -1,5 +1,7 @@
 package com.breakinblocks.deus_ex_machina;
 
+import com.breakinblocks.deus_ex_machina.api.registry.BuffRegistry;
+import com.breakinblocks.deus_ex_machina.registry.BuiltinBuffs;
 import com.breakinblocks.deus_ex_machina.data.DeusExBuffsAttachment;
 import com.breakinblocks.deus_ex_machina.network.NetworkHandler;
 import com.breakinblocks.deus_ex_machina.registry.EffectRegistry;
@@ -30,6 +32,10 @@ public class DeusExMachina {
         EffectRegistry.register(modEventBus);
         ItemRegistry.register(modEventBus);
         DeusExBuffsAttachment.ATTACHMENT_TYPES.register(modEventBus);
+
+        // Register buff types
+        BuffRegistry.BUFF_TYPES.register(modEventBus);
+        BuiltinBuffs.init();
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
