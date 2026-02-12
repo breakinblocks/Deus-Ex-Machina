@@ -2,16 +2,20 @@ package com.breakinblocks.deus_ex_machina.data;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.common.util.INBTSerializable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnknownNullability;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 
 public class DeusExBuffs implements IDeusExBuffs, INBTSerializable<CompoundTag> {
     private boolean enabled = false;
-    private HashMap<String, Integer> resistances = new HashMap<>();
-    private HashMap<String, Integer> strengths = new HashMap<>();
+    private final Map<String, Map<ResourceLocation, Integer>> buffs = new HashMap<>();
 
     @Override
     public boolean isEnabled() {
@@ -24,105 +28,99 @@ public class DeusExBuffs implements IDeusExBuffs, INBTSerializable<CompoundTag> 
     }
 
     @Override
-    public HashMap<String, Integer> getResistances() {
-        return resistances;
+    public Map<ResourceLocation, Integer> getBuffsForMob(String mobKey) {
+        return buffs.getOrDefault(mobKey, Collections.emptyMap());
     }
 
     @Override
-    public int getResistance(String mob) {
-        return this.resistances.getOrDefault(mob, 0);
+    public Map<String, Map<ResourceLocation, Integer>> getAllBuffs() {
+        return Collections.unmodifiableMap(buffs);
     }
 
     @Override
-    public void setResistance(String mob, int amount) {
-        int maxResistance = DeusExMobConfigManager.getResistanceMax(mob);
-        int minResistance = DeusExMobConfigManager.getResistanceMin(mob);
+    public int getBuff(String mobKey, ResourceLocation buffTypeId) {
+        return getBuffsForMob(mobKey).getOrDefault(buffTypeId, 0);
+    }
 
-        if (amount > maxResistance) {
-            this.resistances.put(mob, maxResistance);
-            return;
+    @Override
+    public void setBuff(String mobKey, ResourceLocation buffTypeId, int value) {
+        if (value == 0) {
+            // Remove if zero
+            Map<ResourceLocation, Integer> mobBuffs = buffs.get(mobKey);
+            if (mobBuffs != null) {
+                mobBuffs.remove(buffTypeId);
+                if (mobBuffs.isEmpty()) {
+                    buffs.remove(mobKey);
+                }
+            }
+        } else {
+            buffs.computeIfAbsent(mobKey, k -> new HashMap<>()).put(buffTypeId, value);
         }
-        if (amount < minResistance) {
-            this.resistances.put(mob, minResistance);
-            return;
-        }
-        this.resistances.put(mob, amount);
     }
 
     @Override
-    public void addResistance(String mob, int amount) {
-        setResistance(mob, resistances.getOrDefault(mob, 0) + amount);
-    }
-
-    @Override
-    public HashMap<String, Integer> getStrengths() {
-        return strengths;
-    }
-
-    @Override
-    public int getStrength(String mob) {
-        return this.strengths.getOrDefault(mob, 0);
-    }
-
-    @Override
-    public void setStrength(String mob, int amount) {
-        int maxAttackBoost = DeusExMobConfigManager.getAttackMax(mob);
-        int minAttackBoost = DeusExMobConfigManager.getAttackMin(mob);
-
-        if (amount > maxAttackBoost) {
-            this.strengths.put(mob, maxAttackBoost);
-            return;
-        }
-        if (amount < minAttackBoost) {
-            this.strengths.put(mob, minAttackBoost);
-            return;
-        }
-        this.strengths.put(mob, amount);
-    }
-
-    @Override
-    public void addStrength(String mob, int amount) {
-        setStrength(mob, strengths.getOrDefault(mob, 0) + amount);
+    public void addBuff(String mobKey, ResourceLocation buffTypeId, int amount) {
+        int current = getBuff(mobKey, buffTypeId);
+        setBuff(mobKey, buffTypeId, current + amount);
     }
 
     @Override
     public void saveNBTData(CompoundTag nbt) {
-        CompoundTag resistancesTag = new CompoundTag();
-        for (String mob : resistances.keySet()) {
-            resistancesTag.putInt(mob, resistances.get(mob));
-        }
-        CompoundTag strengthsTag = new CompoundTag();
-        for (String mob : strengths.keySet()) {
-            strengthsTag.putInt(mob, strengths.get(mob));
-        }
         nbt.putBoolean("enabled", enabled);
-        nbt.put("resistances", resistancesTag);
-        nbt.put("strengths", strengthsTag);
+
+        ListTag mobList = new ListTag();
+        for (Map.Entry<String, Map<ResourceLocation, Integer>> mobEntry : buffs.entrySet()) {
+            CompoundTag mobTag = new CompoundTag();
+            mobTag.putString("mob", mobEntry.getKey());
+
+            ListTag buffList = new ListTag();
+            for (Map.Entry<ResourceLocation, Integer> buffEntry : mobEntry.getValue().entrySet()) {
+                CompoundTag buffTag = new CompoundTag();
+                buffTag.putString("type", buffEntry.getKey().toString());
+                buffTag.putInt("value", buffEntry.getValue());
+                buffList.add(buffTag);
+            }
+            mobTag.put("buffs", buffList);
+            mobList.add(mobTag);
+        }
+        nbt.put("mobs", mobList);
     }
 
     @Override
     public void loadNBTData(CompoundTag nbt) {
-        CompoundTag resistancesTag = nbt.getCompound("resistances");
-        for (String key : resistancesTag.getAllKeys()) {
-            int resistance = resistancesTag.getInt(key);
-            this.resistances.put(key, resistance);
-        }
-        CompoundTag strengthsTag = nbt.getCompound("strengths");
-        for (String key : strengthsTag.getAllKeys()) {
-            int strength = strengthsTag.getInt(key);
-            this.strengths.put(key, strength);
-        }
         this.enabled = nbt.getBoolean("enabled");
+        this.buffs.clear();
+
+        ListTag mobList = nbt.getList("mobs", Tag.TAG_COMPOUND);
+        for (int i = 0; i < mobList.size(); i++) {
+            CompoundTag mobTag = mobList.getCompound(i);
+            String mobKey = mobTag.getString("mob");
+
+            Map<ResourceLocation, Integer> mobBuffs = new HashMap<>();
+            ListTag buffList = mobTag.getList("buffs", Tag.TAG_COMPOUND);
+            for (int j = 0; j < buffList.size(); j++) {
+                CompoundTag buffTag = buffList.getCompound(j);
+                ResourceLocation typeId = ResourceLocation.tryParse(buffTag.getString("type"));
+                int value = buffTag.getInt("value");
+                if (typeId != null && value != 0) {
+                    mobBuffs.put(typeId, value);
+                }
+            }
+
+            if (!mobBuffs.isEmpty()) {
+                buffs.put(mobKey, mobBuffs);
+            }
+        }
     }
 
     @Override
     public void copyFrom(@NotNull IDeusExBuffs source) {
-        this.resistances.clear();
-        this.strengths.clear();
-
+        this.buffs.clear();
         this.enabled = source.isEnabled();
-        this.resistances.putAll(source.getResistances());
-        this.strengths.putAll(source.getStrengths());
+
+        for (Map.Entry<String, Map<ResourceLocation, Integer>> mobEntry : source.getAllBuffs().entrySet()) {
+            this.buffs.put(mobEntry.getKey(), new HashMap<>(mobEntry.getValue()));
+        }
     }
 
     @Override

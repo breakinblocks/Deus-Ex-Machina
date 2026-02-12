@@ -4,9 +4,11 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.common.util.INBTSerializable;
 import org.jetbrains.annotations.UnknownNullability;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -16,81 +18,57 @@ import java.util.UUID;
  * Stores buff values per player - when this mob dies, the data dies with it.
  */
 public class DeusExMobData implements INBTSerializable<CompoundTag> {
-    private final Map<UUID, PlayerBuffData> playerBuffs = new HashMap<>();
+    private final Map<UUID, Map<ResourceLocation, Integer>> playerBuffs = new HashMap<>();
 
     /**
-     * Buff data for a specific player against this mob.
+     * Get all buffs for a specific player.
+     * @param playerUUID The player's UUID
+     * @return Map of buff type ID to buff value
      */
-    public record PlayerBuffData(int resistance, int strength) {
-        public static final PlayerBuffData EMPTY = new PlayerBuffData(0, 0);
-
-        public PlayerBuffData withResistance(int resistance) {
-            return new PlayerBuffData(resistance, this.strength);
-        }
-
-        public PlayerBuffData withStrength(int strength) {
-            return new PlayerBuffData(this.resistance, strength);
-        }
-
-        public CompoundTag toNBT() {
-            CompoundTag tag = new CompoundTag();
-            tag.putInt("resistance", resistance);
-            tag.putInt("strength", strength);
-            return tag;
-        }
-
-        public static PlayerBuffData fromNBT(CompoundTag tag) {
-            return new PlayerBuffData(
-                    tag.getInt("resistance"),
-                    tag.getInt("strength")
-            );
-        }
-
-        public boolean isEmpty() {
-            return resistance <= 0 && strength <= 0;
-        }
+    public Map<ResourceLocation, Integer> getBuffsForPlayer(UUID playerUUID) {
+        return playerBuffs.getOrDefault(playerUUID, Collections.emptyMap());
     }
 
-    public PlayerBuffData getBuffData(UUID playerUUID) {
-        return playerBuffs.getOrDefault(playerUUID, PlayerBuffData.EMPTY);
+    /**
+     * Get a specific buff value for a player.
+     * @param playerUUID The player's UUID
+     * @param buffTypeId The buff type ID
+     * @return The buff value, or 0 if not set
+     */
+    public int getBuff(UUID playerUUID, ResourceLocation buffTypeId) {
+        return getBuffsForPlayer(playerUUID).getOrDefault(buffTypeId, 0);
     }
 
-    public int getResistance(UUID playerUUID) {
-        return getBuffData(playerUUID).resistance();
-    }
-
-    public int getStrength(UUID playerUUID) {
-        return getBuffData(playerUUID).strength();
-    }
-
-    public void setResistance(UUID playerUUID, int amount) {
-        PlayerBuffData current = getBuffData(playerUUID);
-        PlayerBuffData updated = current.withResistance(amount);
-        if (updated.isEmpty()) {
-            playerBuffs.remove(playerUUID);
+    /**
+     * Set a specific buff value for a player.
+     * @param playerUUID The player's UUID
+     * @param buffTypeId The buff type ID
+     * @param value The value to set
+     */
+    public void setBuff(UUID playerUUID, ResourceLocation buffTypeId, int value) {
+        if (value == 0) {
+            Map<ResourceLocation, Integer> buffs = playerBuffs.get(playerUUID);
+            if (buffs != null) {
+                buffs.remove(buffTypeId);
+                if (buffs.isEmpty()) {
+                    playerBuffs.remove(playerUUID);
+                }
+            }
         } else {
-            playerBuffs.put(playerUUID, updated);
+            playerBuffs.computeIfAbsent(playerUUID, k -> new HashMap<>()).put(buffTypeId, value);
         }
     }
 
-    public void setStrength(UUID playerUUID, int amount) {
-        PlayerBuffData current = getBuffData(playerUUID);
-        PlayerBuffData updated = current.withStrength(amount);
-        if (updated.isEmpty()) {
-            playerBuffs.remove(playerUUID);
-        } else {
-            playerBuffs.put(playerUUID, updated);
-        }
-    }
-
-    public void addResistance(UUID playerUUID, int amount, int max) {
-        int current = getResistance(playerUUID);
-        setResistance(playerUUID, Math.min(max, current + amount));
-    }
-
-    public void addStrength(UUID playerUUID, int amount, int max) {
-        int current = getStrength(playerUUID);
-        setStrength(playerUUID, Math.min(max, current + amount));
+    /**
+     * Add to a specific buff value for a player.
+     * @param playerUUID The player's UUID
+     * @param buffTypeId The buff type ID
+     * @param amount The amount to add
+     * @param max The maximum value
+     */
+    public void addBuff(UUID playerUUID, ResourceLocation buffTypeId, int amount, int max) {
+        int current = getBuff(playerUUID, buffTypeId);
+        setBuff(playerUUID, buffTypeId, Math.min(max, current + amount));
     }
 
     public boolean hasPlayer(UUID playerUUID) {
@@ -102,11 +80,19 @@ public class DeusExMobData implements INBTSerializable<CompoundTag> {
         CompoundTag nbt = new CompoundTag();
         ListTag playerList = new ListTag();
 
-        for (Map.Entry<UUID, PlayerBuffData> entry : playerBuffs.entrySet()) {
-            CompoundTag playerEntry = new CompoundTag();
-            playerEntry.putUUID("uuid", entry.getKey());
-            playerEntry.put("data", entry.getValue().toNBT());
-            playerList.add(playerEntry);
+        for (Map.Entry<UUID, Map<ResourceLocation, Integer>> playerEntry : playerBuffs.entrySet()) {
+            CompoundTag playerTag = new CompoundTag();
+            playerTag.putUUID("uuid", playerEntry.getKey());
+
+            ListTag buffList = new ListTag();
+            for (Map.Entry<ResourceLocation, Integer> buffEntry : playerEntry.getValue().entrySet()) {
+                CompoundTag buffTag = new CompoundTag();
+                buffTag.putString("type", buffEntry.getKey().toString());
+                buffTag.putInt("value", buffEntry.getValue());
+                buffList.add(buffTag);
+            }
+            playerTag.put("buffs", buffList);
+            playerList.add(playerTag);
         }
 
         nbt.put("players", playerList);
@@ -119,13 +105,24 @@ public class DeusExMobData implements INBTSerializable<CompoundTag> {
 
         ListTag playerList = nbt.getList("players", Tag.TAG_COMPOUND);
         for (int i = 0; i < playerList.size(); i++) {
-            CompoundTag entry = playerList.getCompound(i);
-            if (entry.hasUUID("uuid") && entry.contains("data")) {
-                UUID uuid = entry.getUUID("uuid");
-                PlayerBuffData data = PlayerBuffData.fromNBT(entry.getCompound("data"));
-                if (!data.isEmpty()) {
-                    playerBuffs.put(uuid, data);
+            CompoundTag playerTag = playerList.getCompound(i);
+            if (!playerTag.hasUUID("uuid")) continue;
+
+            UUID uuid = playerTag.getUUID("uuid");
+            Map<ResourceLocation, Integer> buffs = new HashMap<>();
+
+            ListTag buffList = playerTag.getList("buffs", Tag.TAG_COMPOUND);
+            for (int j = 0; j < buffList.size(); j++) {
+                CompoundTag buffTag = buffList.getCompound(j);
+                ResourceLocation typeId = ResourceLocation.tryParse(buffTag.getString("type"));
+                int value = buffTag.getInt("value");
+                if (typeId != null && value != 0) {
+                    buffs.put(typeId, value);
                 }
+            }
+
+            if (!buffs.isEmpty()) {
+                playerBuffs.put(uuid, buffs);
             }
         }
     }
