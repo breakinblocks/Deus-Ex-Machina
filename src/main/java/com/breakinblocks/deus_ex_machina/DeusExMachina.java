@@ -1,7 +1,9 @@
 package com.breakinblocks.deus_ex_machina;
 
+import com.breakinblocks.deus_ex_machina.api.registry.BuffRegistry;
 import com.breakinblocks.deus_ex_machina.network.NetworkHandler;
 import com.breakinblocks.deus_ex_machina.registry.BrewingRegistry;
+import com.breakinblocks.deus_ex_machina.registry.BuiltinBuffs;
 import com.breakinblocks.deus_ex_machina.registry.EffectRegistry;
 import com.breakinblocks.deus_ex_machina.registry.ItemRegistry;
 import com.mojang.logging.LogUtils;
@@ -32,15 +34,19 @@ public class DeusExMachina {
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::addCreative);
 
-
         EffectRegistry.register(modEventBus);
         ItemRegistry.register(modEventBus);
 
+        // Register buff types
+        BuiltinBuffs.init();
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         NetworkHandler.register();
         event.enqueueWork(BrewingRegistry::registerRecipes);
+
+        // Freeze the buff registry after setup
+        BuffRegistry.freeze();
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {

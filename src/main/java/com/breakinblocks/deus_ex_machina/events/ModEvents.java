@@ -1,5 +1,6 @@
 package com.breakinblocks.deus_ex_machina.events;
 
+import com.breakinblocks.deus_ex_machina.data.DeusExMobData;
 import com.breakinblocks.deus_ex_machina.data.IDeusExBuffs;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -13,5 +14,6 @@ public class ModEvents {
     @SubscribeEvent
     public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
         event.register(IDeusExBuffs.class);
+        event.register(DeusExMobData.class);
     }
 }
