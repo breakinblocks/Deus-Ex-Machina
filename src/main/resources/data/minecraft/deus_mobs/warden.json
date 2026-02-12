@@ -1,17 +1,17 @@
 {
-  "_comment": "Custom buff settings for the Warden. Uses instance mode - each warden tracks kills individually.",
+  "_comment": "Custom buff settings for the Warden.",
   "target": "minecraft:warden",
   "type": "instance",
   "buffs": {
     "deus_ex_machina:resistance": {
       "min": 0,
-      "max": 90,
-      "increase": 3,
+      "max": 80,
+      "increase": 2,
       "reset": "FULL"
     },
     "deus_ex_machina:attack_boost": {
       "min": 0,
-      "max": 50,
+      "max": 80,
       "increase": 2,
       "reset": "FULL"
     }
