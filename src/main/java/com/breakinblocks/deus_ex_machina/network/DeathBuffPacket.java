@@ -7,60 +7,62 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
+/**
+ * Network packet sent to client when player dies to a Deus Ex mob.
+ * Contains all buff changes that occurred.
+ */
 public class DeathBuffPacket {
     private final ResourceLocation killerType;
-    private final boolean resistanceEnabled;
-    private final boolean attackEnabled;
-    private final int resistanceGain;
-    private final int attackBoostGain;
-    private final int newResistance;
-    private final int newAttackBoost;
+    private final Map<ResourceLocation, int[]> buffChanges; // buffTypeId -> [gain, newValue]
 
-    public DeathBuffPacket(ResourceLocation killerType, boolean resistanceEnabled, boolean attackEnabled,
-                           int resistanceGain, int attackBoostGain, int newResistance, int newAttackBoost) {
+    public DeathBuffPacket(ResourceLocation killerType, Map<ResourceLocation, int[]> buffChanges) {
         this.killerType = killerType;
-        this.resistanceEnabled = resistanceEnabled;
-        this.attackEnabled = attackEnabled;
-        this.resistanceGain = resistanceGain;
-        this.attackBoostGain = attackBoostGain;
-        this.newResistance = newResistance;
-        this.newAttackBoost = newAttackBoost;
+        this.buffChanges = buffChanges;
     }
 
     public static void encode(DeathBuffPacket packet, FriendlyByteBuf buf) {
         buf.writeResourceLocation(packet.killerType);
-        buf.writeBoolean(packet.resistanceEnabled);
-        buf.writeBoolean(packet.attackEnabled);
-        buf.writeInt(packet.resistanceGain);
-        buf.writeInt(packet.attackBoostGain);
-        buf.writeInt(packet.newResistance);
-        buf.writeInt(packet.newAttackBoost);
+        buf.writeInt(packet.buffChanges.size());
+        for (Map.Entry<ResourceLocation, int[]> entry : packet.buffChanges.entrySet()) {
+            buf.writeResourceLocation(entry.getKey());
+            buf.writeInt(entry.getValue()[0]); // gain
+            buf.writeInt(entry.getValue()[1]); // newValue
+        }
     }
 
     public static DeathBuffPacket decode(FriendlyByteBuf buf) {
-        return new DeathBuffPacket(
-                buf.readResourceLocation(),
-                buf.readBoolean(),
-                buf.readBoolean(),
-                buf.readInt(),
-                buf.readInt(),
-                buf.readInt(),
-                buf.readInt()
-        );
+        ResourceLocation killerType = buf.readResourceLocation();
+        int count = buf.readInt();
+        Map<ResourceLocation, int[]> buffChanges = new HashMap<>();
+        for (int i = 0; i < count; i++) {
+            ResourceLocation buffId = buf.readResourceLocation();
+            int gain = buf.readInt();
+            int newValue = buf.readInt();
+            buffChanges.put(buffId, new int[]{gain, newValue});
+        }
+        return new DeathBuffPacket(killerType, buffChanges);
     }
 
     public static void handle(DeathBuffPacket packet, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
-            DeusExMachina.LOGGER.info("[DeathBuffPacket] Received: {} res={} +{}%, atk={} +{}%",
-                    packet.killerType, packet.resistanceEnabled, packet.resistanceGain,
-                    packet.attackEnabled, packet.attackBoostGain);
+            DeusExMachina.LOGGER.info("[DeathBuffPacket] Received for {} with {} buff changes",
+                    packet.killerType, packet.buffChanges.size());
             DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
-                    ClientPacketHandler.handle(packet.killerType, packet.resistanceEnabled, packet.attackEnabled,
-                            packet.resistanceGain, packet.attackBoostGain, packet.newResistance, packet.newAttackBoost)
+                    ClientPacketHandler.handle(packet.killerType, packet.buffChanges)
             );
         });
         ctx.get().setPacketHandled(true);
+    }
+
+    public ResourceLocation getKillerType() {
+        return killerType;
+    }
+
+    public Map<ResourceLocation, int[]> getBuffChanges() {
+        return buffChanges;
     }
 }
