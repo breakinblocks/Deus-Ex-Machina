@@ -5,6 +5,21 @@ All notable changes to Deus Ex Machina will be documented in this file.
 ## [1.1.0]
 
 ### Added
+- **Extensible Buff Type API**: New registry-based system replacing hardcoded resistance/strength buffs. Third-party mods can register custom buff types.
+- **Buff Registry**: All buff types are registered with a `ResourceLocation` ID, display name, color, and default settings.
+- **11 Built-in Buff Types**:
+  - **Resistance** — Reduces incoming damage by a percentage
+  - **Attack Boost** — Increases outgoing damage by a percentage
+  - **Evasion** — Chance to completely dodge an attack
+  - **Thorns** — Reflects a percentage of incoming damage back to the attacker
+  - **Life Leech** — Heals the player for a percentage of damage dealt
+  - **Critical Chance** — Chance to deal 1.5x damage on hit
+  - **Execute** — Bonus damage against targets below 30% health
+  - **Knockback** — Pushes targets further on hit
+  - **Knockback Resistance** — Reduces knockback taken by the player
+  - **Berserker** — Take more damage but deal even more (high risk/reward, applies on both hurt and attack)
+  - **Momentum** — Stacking damage bonus on consecutive hits, resets when hit
+- **Buff Categories**: `RESISTANCE`, `DAMAGE`, `MOVEMENT`, `HEALTH`, `MISC` — determines when a buff applies (on hurt, on attack, or both)
 - **Datapack-Driven Mob Configuration**: Mob buff settings are now configured via datapacks instead of TOML config. Create JSON files in `data/<namespace>/deus_mobs/` to customize any mob.
 - **Entity Tag Support**: Configure buffs for entire groups of mobs using entity tags (e.g., `#minecraft:undead`). Tag configs apply to all matching entities.
 - **Instance Mode Tracking**: New `"type"` field in datapack JSON with two modes:
@@ -13,17 +28,24 @@ All notable changes to Deus Ex Machina will be documented in this file.
 - **Selective Buff Display**: Death screen only shows buffs that are enabled for that mob in the datapack.
 
 ### Changed
+- Datapack JSON now uses a `"buffs"` map keyed by registry IDs instead of separate `"resistance"` and `"attack"` objects.
+- Death screen dynamically renders all active buff types with their registered display names and colors.
+- Network packets transmit a dynamic map of buff changes instead of fixed resistance/strength fields.
 - Warden now uses instance mode - dying to one warden only builds resistance against that specific warden.
 - Reset behavior now uses enums (`NONE`, `FULL`, `PARTIAL`) instead of strings.
 - Mob data for instance mode stored on entity attachment - automatically cleaned up on mob death.
+- Updated Ambrosia item texture.
 
 ### Example Datapack JSON
 ```json
 {
   "target": "minecraft:warden",
   "type": "instance",
-  "resistance": { "min": 0, "max": 90, "increase": 3, "reset": "FULL" },
-  "attack": { "min": 0, "max": 50, "increase": 2, "reset": "FULL" }
+  "buffs": {
+    "deus_ex_machina:resistance": { "min": 0, "max": 80, "increase": 2, "reset": "FULL" },
+    "deus_ex_machina:attack_boost": { "min": 0, "max": 80, "increase": 2, "reset": "FULL" },
+    "deus_ex_machina:evasion": { "min": 0, "max": 30, "increase": 1, "reset": "FULL" }
+  }
 }
 ```
 
