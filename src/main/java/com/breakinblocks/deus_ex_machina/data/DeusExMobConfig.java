@@ -1,45 +1,62 @@
 package com.breakinblocks.deus_ex_machina.data;
 
+import com.breakinblocks.deus_ex_machina.enums.TypeEnum;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
- * Configuration for a specific mob or tag group.
- * Loaded from datapack JSON files in data/deus_ex_machina/deus_mobs/
+ * Configuration for a specific mob or tag loaded from datapacks.
  */
 public record DeusExMobConfig(
         String target,
-        @Nullable BuffSettings resistance,
-        @Nullable BuffSettings attack
+        TypeEnum type,
+        Map<ResourceLocation, BuffSettings> buffSettings
 ) {
-
     public static DeusExMobConfig fromJson(JsonObject json) {
         String target = json.get("target").getAsString();
 
-        BuffSettings resistance = null;
-        if (json.has("resistance") && json.get("resistance").isJsonObject()) {
-            resistance = BuffSettings.fromJson(json.getAsJsonObject("resistance"));
+        TypeEnum type = TypeEnum.ENTITY_TYPE;
+        if (json.has("type")) {
+            String typeStr = json.get("type").getAsString().toUpperCase();
+            try {
+                type = TypeEnum.valueOf(typeStr);
+            } catch (IllegalArgumentException ignored) {
+            }
         }
 
-        BuffSettings attack = null;
-        if (json.has("attack") && json.get("attack").isJsonObject()) {
-            attack = BuffSettings.fromJson(json.getAsJsonObject("attack"));
+        Map<ResourceLocation, BuffSettings> buffSettings = new HashMap<>();
+
+        // Parse "buffs" map
+        if (json.has("buffs") && json.get("buffs").isJsonObject()) {
+            JsonObject buffsObj = json.getAsJsonObject("buffs");
+            for (Map.Entry<String, JsonElement> entry : buffsObj.entrySet()) {
+                ResourceLocation buffId = ResourceLocation.tryParse(entry.getKey());
+                if (buffId != null && entry.getValue().isJsonObject()) {
+                    buffSettings.put(buffId, BuffSettings.fromJson(entry.getValue().getAsJsonObject()));
+                }
+            }
         }
 
-        return new DeusExMobConfig(target, resistance, attack);
+        return new DeusExMobConfig(target, type, buffSettings);
     }
 
     /**
-     * Check if this config has any resistance settings.
+     * Get settings for a specific buff type.
      */
-    public boolean hasResistance() {
-        return resistance != null && resistance.hasAnyValue();
+    @Nullable
+    public BuffSettings getBuffSettings(ResourceLocation buffTypeId) {
+        return buffSettings.get(buffTypeId);
     }
 
     /**
-     * Check if this config has any attack settings.
+     * Check if a specific buff type is enabled for this config.
      */
-    public boolean hasAttack() {
-        return attack != null && attack.hasAnyValue();
+    public boolean isBuffEnabled(ResourceLocation buffTypeId) {
+        return buffSettings.containsKey(buffTypeId);
     }
 }

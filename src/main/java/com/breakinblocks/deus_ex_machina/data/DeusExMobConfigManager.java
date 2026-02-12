@@ -1,8 +1,9 @@
 package com.breakinblocks.deus_ex_machina.data;
 
-import com.breakinblocks.deus_ex_machina.Config;
 import com.breakinblocks.deus_ex_machina.DeusExMachina;
+import com.breakinblocks.deus_ex_machina.api.buff.BuffType;
 import com.breakinblocks.deus_ex_machina.enums.ResetEnum;
+import com.breakinblocks.deus_ex_machina.enums.TypeEnum;
 import com.breakinblocks.deus_ex_machina.handler.DeusExMobHandler;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -21,7 +22,7 @@ import java.util.Map;
 
 /**
  * Manages loading of per-mob/tag buff configurations from datapacks.
- * Loads JSON files from data/deus_ex_machina/deus_mobs/
+ * Loads JSON files from data/&lt;namespace&gt;/deus_mobs/
  */
 public class DeusExMobConfigManager extends SimpleJsonResourceReloadListener {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -80,118 +81,86 @@ public class DeusExMobConfigManager extends SimpleJsonResourceReloadListener {
     }
 
     /**
-     * Check if resistance buffs are enabled for a key.
-     * Returns true if no config exists (use defaults) or if resistance is explicitly defined.
+     * Get the tracking type for a key.
      */
-    public static boolean isResistanceEnabled(String key) {
+    public static TypeEnum getType(String key) {
         DeusExMobConfig config = getConfig(key);
-        // No config = use defaults (enabled)
-        if (config == null) return true;
-        // Config exists = only enabled if resistance is defined
-        return config.resistance() != null;
+        if (config == null) return TypeEnum.ENTITY_TYPE;
+        return config.type();
     }
 
     /**
-     * Check if attack buffs are enabled for a key.
-     * Returns true if no config exists (use defaults) or if attack is explicitly defined.
+     * Check if a key uses instance mode.
      */
-    public static boolean isAttackEnabled(String key) {
-        DeusExMobConfig config = getConfig(key);
-        // No config = use defaults (enabled)
-        if (config == null) return true;
-        // Config exists = only enabled if attack is defined
-        return config.attack() != null;
+    public static boolean isInstanceMode(String key) {
+        return getType(key) == TypeEnum.INSTANCE;
     }
 
-    // ===== RESISTANCE SETTINGS =====
+    /**
+     * Check if a specific buff type is enabled for a key.
+     * Returns true if config has settings for this buff type.
+     */
+    public static boolean isBuffEnabled(String key, ResourceLocation buffTypeId) {
+        DeusExMobConfig config = getConfig(key);
+        if (config == null) return false;
+        return config.isBuffEnabled(buffTypeId);
+    }
 
     /**
-     * Get resistance min for a key, falling back to default.
+     * Get settings for a specific buff type, or null if not configured.
      */
-    public static int getResistanceMin(String key) {
+    @Nullable
+    public static BuffSettings getBuffSettings(String key, ResourceLocation buffTypeId) {
         DeusExMobConfig config = getConfig(key);
-        if (config != null && config.resistance() != null) {
-            return config.resistance().getMin(BuffSettings.DEFAULT_MIN);
+        if (config == null) return null;
+        return config.getBuffSettings(buffTypeId);
+    }
+
+    /**
+     * Get the min value for a buff type, falling back to the buff type's default.
+     */
+    public static int getBuffMin(String key, BuffType buffType) {
+        BuffSettings settings = getBuffSettings(key, buffType.getId());
+        if (settings != null) {
+            return settings.getMin(buffType.getDefaultSettings().min());
         }
-        return BuffSettings.DEFAULT_MIN;
+        return buffType.getDefaultSettings().min();
     }
 
     /**
-     * Get resistance max for a key, falling back to default.
+     * Get the max value for a buff type, falling back to the buff type's default.
      */
-    public static int getResistanceMax(String key) {
-        DeusExMobConfig config = getConfig(key);
-        if (config != null && config.resistance() != null) {
-            return config.resistance().getMax(BuffSettings.DEFAULT_MAX);
+    public static int getBuffMax(String key, BuffType buffType) {
+        BuffSettings settings = getBuffSettings(key, buffType.getId());
+        if (settings != null) {
+            return settings.getMax(buffType.getDefaultSettings().max());
         }
-        return BuffSettings.DEFAULT_MAX;
+        return buffType.getDefaultSettings().max();
     }
 
     /**
-     * Get resistance increase for a key, falling back to default.
+     * Get the increase value for a buff type, falling back to the buff type's default.
      */
-    public static int getResistanceIncrease(String key) {
-        DeusExMobConfig config = getConfig(key);
-        if (config != null && config.resistance() != null) {
-            return config.resistance().getIncrease(BuffSettings.DEFAULT_INCREASE);
+    public static int getBuffIncrease(String key, BuffType buffType) {
+        BuffSettings settings = getBuffSettings(key, buffType.getId());
+        if (settings != null) {
+            return settings.getIncrease(buffType.getDefaultSettings().increase());
         }
-        return BuffSettings.DEFAULT_INCREASE;
+        return buffType.getDefaultSettings().increase();
     }
 
     /**
-     * Get resistance reset behavior for a key, falling back to global config.
+     * Get the reset behavior for a buff type, falling back to the buff type's default.
      */
-    public static ResetEnum getResistanceReset(String key) {
-        DeusExMobConfig config = getConfig(key);
-        if (config != null && config.resistance() != null) {
-            return config.resistance().getReset(Config.resistanceReset);
+    public static ResetEnum getBuffReset(String key, BuffType buffType) {
+        BuffSettings settings = getBuffSettings(key, buffType.getId());
+        ResetEnum defaultReset = buffType.getDefaultSettings().reset();
+        if (defaultReset == null) {
+            defaultReset = ResetEnum.FULL;
         }
-        return Config.resistanceReset;
-    }
-
-    // ===== ATTACK SETTINGS =====
-
-    /**
-     * Get attack min for a key, falling back to default.
-     */
-    public static int getAttackMin(String key) {
-        DeusExMobConfig config = getConfig(key);
-        if (config != null && config.attack() != null) {
-            return config.attack().getMin(BuffSettings.DEFAULT_MIN);
+        if (settings != null) {
+            return settings.getReset(defaultReset);
         }
-        return BuffSettings.DEFAULT_MIN;
-    }
-
-    /**
-     * Get attack max for a key, falling back to default.
-     */
-    public static int getAttackMax(String key) {
-        DeusExMobConfig config = getConfig(key);
-        if (config != null && config.attack() != null) {
-            return config.attack().getMax(BuffSettings.DEFAULT_MAX);
-        }
-        return BuffSettings.DEFAULT_MAX;
-    }
-
-    /**
-     * Get attack increase for a key, falling back to default.
-     */
-    public static int getAttackIncrease(String key) {
-        DeusExMobConfig config = getConfig(key);
-        if (config != null && config.attack() != null) {
-            return config.attack().getIncrease(BuffSettings.DEFAULT_INCREASE);
-        }
-        return BuffSettings.DEFAULT_INCREASE;
-    }
-
-    /**
-     * Get attack reset behavior for a key, falling back to global config.
-     */
-    public static ResetEnum getAttackReset(String key) {
-        DeusExMobConfig config = getConfig(key);
-        if (config != null && config.attack() != null) {
-            return config.attack().getReset(Config.attackBoostReset);
-        }
-        return Config.attackBoostReset;
+        return defaultReset;
     }
 }
