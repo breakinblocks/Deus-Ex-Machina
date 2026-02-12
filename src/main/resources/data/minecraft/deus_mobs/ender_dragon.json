@@ -1,16 +1,18 @@
 {
-    "_comment": "Custom buff settings for the Ender Dragon.",
-    "target": "minecraft:ender_dragon",
-    "resistance": {
-        "min": 0,
-        "max": 100,
-        "increase": 10,
-        "reset": "NONE"
+  "_comment": "Custom buff settings for the Ender Dragon.",
+  "target": "minecraft:ender_dragon",
+  "buffs": {
+    "deus_ex_machina:resistance": {
+      "min": 0,
+      "max": 100,
+      "increase": 10,
+      "reset": "NONE"
     },
-    "attack": {
-        "min": 0,
-        "max": 100,
-        "increase": 10,
-        "reset": "NONE"
+    "deus_ex_machina:attack_boost": {
+      "min": 0,
+      "max": 100,
+      "increase": 10,
+      "reset": "NONE"
     }
+  }
 }

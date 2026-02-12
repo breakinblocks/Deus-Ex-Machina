@@ -1,0 +1,16 @@
+{
+  "target": "minecraft:zombie",
+  "type": "entity_type",
+  "buffs": {
+    "deus_ex_machina:resistance": { "min": 0, "max": 80, "increase": 5, "reset": "FULL" },
+    "deus_ex_machina:evasion": { "min": 0, "max": 50, "increase": 5, "reset": "FULL" },
+    "deus_ex_machina:thorns": { "min": 0, "max": 100, "increase": 10, "reset": "FULL" },
+    "deus_ex_machina:attack_boost": { "min": 0, "max": 50, "increase": 5, "reset": "FULL" },
+    "deus_ex_machina:life_leech": { "min": 0, "max": 25, "increase": 3, "reset": "FULL" },
+    "deus_ex_machina:critical_chance": { "min": 0, "max": 75, "increase": 5, "reset": "FULL" },
+    "deus_ex_machina:execute": { "min": 0, "max": 100, "increase": 10, "reset": "FULL" },
+    "deus_ex_machina:knockback": { "min": 0, "max": 200, "increase": 20, "reset": "FULL" },
+    "deus_ex_machina:berserker": { "min": 0, "max": 50, "increase": 5, "reset": "FULL" },
+    "deus_ex_machina:momentum": { "min": 0, "max": 10, "increase": 1, "reset": "FULL" }
+  }
+}
