@@ -2,6 +2,9 @@ package com.breakinblocks.deus_ex_machina.events;
 
 import com.breakinblocks.deus_ex_machina.Config;
 import com.breakinblocks.deus_ex_machina.DeusExMachina;
+import com.breakinblocks.deus_ex_machina.api.buff.BuffContext;
+import com.breakinblocks.deus_ex_machina.api.buff.BuffType;
+import com.breakinblocks.deus_ex_machina.api.registry.BuffRegistry;
 import com.breakinblocks.deus_ex_machina.data.DeusExBuffsAttachment;
 import com.breakinblocks.deus_ex_machina.data.DeusExBuffsHelper;
 import com.breakinblocks.deus_ex_machina.data.DeusExMobConfigManager;
@@ -41,23 +44,34 @@ public class HurtEvents {
         if (!player.hasEffect(EffectRegistry.DEUS_EX_MACHINA_EFFECT)) return;
 
         DeusExBuffsHelper.getGroupKey(attacker.getType()).ifPresent(groupKey -> {
-            if (!DeusExMobConfigManager.isResistanceEnabled(groupKey)) return;
+            float damage = event.getNewDamage();
+            BuffContext context = BuffContext.playerHurt(player, livingAttacker, event);
 
-            int resistance;
-            if (DeusExMobConfigManager.getType(groupKey) == TypeEnum.INSTANCE) {
-                // Instance mode: get resistance from mob's attachment
-                DeusExMobData mobData = livingAttacker.getData(DeusExBuffsAttachment.DEUS_EX_MOB_DATA);
-                resistance = mobData.getResistance(player.getUUID());
-            } else {
-                // Entity type mode: get resistance from player's attachment
-                resistance = DeusExBuffsHelper.getBuffs(player).getResistance(groupKey);
+            // Apply all buffs that work on player hurt
+            for (BuffType buffType : BuffRegistry.getAll()) {
+                if (!buffType.appliesOnPlayerHurt()) continue;
+                if (!DeusExMobConfigManager.isBuffEnabled(groupKey, buffType.getId())) continue;
+
+                int buffValue;
+                if (DeusExMobConfigManager.getType(groupKey) == TypeEnum.INSTANCE) {
+                    // Instance mode: get buff from mob's attachment
+                    DeusExMobData mobData = livingAttacker.getData(DeusExBuffsAttachment.DEUS_EX_MOB_DATA);
+                    buffValue = mobData.getBuff(player.getUUID(), buffType.getId());
+                } else {
+                    // Entity type mode: get buff from player's attachment
+                    buffValue = DeusExBuffsHelper.getBuffs(player).getBuff(groupKey, buffType.getId());
+                }
+
+                if (buffValue != 0) {
+                    float newDamage = buffType.apply(buffValue, damage, context);
+                    debug("Applied " + buffType.getId() + " (value=" + buffValue + "): " + damage + " -> " + newDamage);
+                    damage = newDamage;
+                }
             }
 
-            if (resistance > 0) {
-                float originalDamage = event.getNewDamage();
-                float newDamage = Math.max(0, originalDamage * (1 - resistance / 100f));
-                event.setNewDamage(newDamage);
-                debug("Player " + player.getName().getString() + " hurt by " + groupKey + ". Damage: " + originalDamage + " -> " + newDamage + " (" + resistance + "% resistance)");
+            if (damage != event.getNewDamage()) {
+                event.setNewDamage(damage);
+                debug("Player " + player.getName().getString() + " hurt by " + groupKey + ". Final damage: " + damage);
             }
         });
     }
@@ -68,23 +82,34 @@ public class HurtEvents {
         if (!player.hasEffect(EffectRegistry.DEUS_EX_MACHINA_EFFECT)) return;
 
         DeusExBuffsHelper.getGroupKey(entity).ifPresent(groupKey -> {
-            if (!DeusExMobConfigManager.isAttackEnabled(groupKey)) return;
+            float damage = event.getNewDamage();
+            BuffContext context = BuffContext.playerAttack(player, entity, event);
 
-            int attackBoost;
-            if (DeusExMobConfigManager.getType(groupKey) == TypeEnum.INSTANCE) {
-                // Instance mode: get strength from mob's attachment
-                DeusExMobData mobData = entity.getData(DeusExBuffsAttachment.DEUS_EX_MOB_DATA);
-                attackBoost = mobData.getStrength(player.getUUID());
-            } else {
-                // Entity type mode: get strength from player's attachment
-                attackBoost = DeusExBuffsHelper.getBuffs(player).getStrength(groupKey);
+            // Apply all buffs that work on player attack
+            for (BuffType buffType : BuffRegistry.getAll()) {
+                if (!buffType.appliesOnPlayerAttack()) continue;
+                if (!DeusExMobConfigManager.isBuffEnabled(groupKey, buffType.getId())) continue;
+
+                int buffValue;
+                if (DeusExMobConfigManager.getType(groupKey) == TypeEnum.INSTANCE) {
+                    // Instance mode: get buff from mob's attachment
+                    DeusExMobData mobData = entity.getData(DeusExBuffsAttachment.DEUS_EX_MOB_DATA);
+                    buffValue = mobData.getBuff(player.getUUID(), buffType.getId());
+                } else {
+                    // Entity type mode: get buff from player's attachment
+                    buffValue = DeusExBuffsHelper.getBuffs(player).getBuff(groupKey, buffType.getId());
+                }
+
+                if (buffValue != 0) {
+                    float newDamage = buffType.apply(buffValue, damage, context);
+                    debug("Applied " + buffType.getId() + " (value=" + buffValue + "): " + damage + " -> " + newDamage);
+                    damage = newDamage;
+                }
             }
 
-            if (attackBoost > 0) {
-                float originalDamage = event.getNewDamage();
-                float newDamage = originalDamage * (1 + attackBoost / 100f);
-                event.setNewDamage(newDamage);
-                debug("Player " + player.getName().getString() + " hurting " + groupKey + ". Damage: " + originalDamage + " -> " + newDamage + " (" + attackBoost + "% boost)");
+            if (damage != event.getNewDamage()) {
+                event.setNewDamage(damage);
+                debug("Player " + player.getName().getString() + " hurting " + groupKey + ". Final damage: " + damage);
             }
         });
     }
