@@ -6,7 +6,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -45,35 +44,58 @@ public class DeusExBuffsHelper {
     }
 
     /**
-     * Get group key for an entity type.
-     * Returns the tag (e.g., "#minecraft:undead") if the entity matches a tag,
-     * otherwise returns the entity's ResourceLocation string.
+     * Get storage key for an entity type (used to store buff data per player).
+     * Tags group entities under one key; regex matches return the entity's own ID.
      */
     public static Optional<String> getGroupKey(EntityType<?> entityType) {
         return Optional.ofNullable(DeusExMobHandler.getGroupKey(entityType));
     }
 
     /**
-     * Get group key from a living entity.
+     * Get storage key from a living entity.
      */
     public static Optional<String> getGroupKey(LivingEntity entity) {
         return getGroupKey(entity.getType());
     }
 
     /**
-     * Execute action with buffs and group key if both are present.
+     * Get config key for an entity type (used to look up datapack config settings).
+     * Returns the original target string: tag, regex pattern, or entity ID.
      */
-    public static void withBuffsForMob(LivingEntity player, EntityType<?> mobType, BiConsumer<DeusExBuffs, String> action) {
-        getGroupKey(mobType).ifPresent(key ->
-                withBuffs(player, buff -> action.accept(buff, key))
+    public static Optional<String> getConfigKey(EntityType<?> entityType) {
+        return Optional.ofNullable(DeusExMobHandler.getConfigKey(entityType));
+    }
+
+    /**
+     * Get config key from a living entity.
+     */
+    public static Optional<String> getConfigKey(LivingEntity entity) {
+        return getConfigKey(entity.getType());
+    }
+
+    /**
+     * Execute action with buffs, storage key, and config key if all are present.
+     * @param action receives (buffs, storageKey, configKey)
+     */
+    public static void withBuffsForMob(LivingEntity player, EntityType<?> mobType, TriConsumer<DeusExBuffs, String, String> action) {
+        getGroupKey(mobType).ifPresent(storageKey ->
+                getConfigKey(mobType).ifPresent(configKey ->
+                        withBuffs(player, buff -> action.accept(buff, storageKey, configKey))
+                )
         );
     }
 
     /**
-     * Execute action with buffs and group key if both are present.
+     * Execute action with buffs, storage key, and config key if all are present.
+     * @param action receives (buffs, storageKey, configKey)
      */
-    public static void withBuffsForMob(LivingEntity player, LivingEntity mob, BiConsumer<DeusExBuffs, String> action) {
+    public static void withBuffsForMob(LivingEntity player, LivingEntity mob, TriConsumer<DeusExBuffs, String, String> action) {
         withBuffsForMob(player, mob.getType(), action);
+    }
+
+    @FunctionalInterface
+    public interface TriConsumer<A, B, C> {
+        void accept(A a, B b, C c);
     }
 
     /**
