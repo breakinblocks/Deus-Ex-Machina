@@ -84,20 +84,22 @@ public class DeusExMobHandler {
     }
 
     /**
-     * Gets the group key for an entity type.
-     * If the entity matches a tag, returns the tag (e.g., "#minecraft:undead").
-     * If it matches a regex, returns the regex pattern wrapped in slashes.
-     * If it matches an exact entry, returns the entity's ResourceLocation.
+     * Gets the storage key for an entity type (used to store buff data per player).
+     * If the entity matches a tag, returns the tag (e.g., "#minecraft:undead") — tags group entities.
+     * If it matches a regex or exact entry, returns the entity's own ResourceLocation string.
+     * Regex patterns act only as matchers — each entity gets its own storage key.
      * Returns null if the entity doesn't match any config entry.
      */
     public static String getGroupKey(EntityType<?> entityType) {
-        // Check exact matches first - return entity ID
+        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entityType);
+        if (id == null) return null;
+
+        // Check exact matches - return entity ID
         if (exactMatches.contains(entityType)) {
-            ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entityType);
-            return id != null ? id.toString() : null;
+            return id.toString();
         }
 
-        // Check entity tags - return tag key
+        // Check entity tags - return tag key (tags group entities together)
         if (!entityTags.isEmpty()) {
             for (TagKey<EntityType<?>> tag : entityTags) {
                 if (entityType.is(tag)) {
@@ -106,7 +108,41 @@ public class DeusExMobHandler {
             }
         }
 
-        // Check regex patterns - return the regex pattern string (wrapped in slashes)
+        // Check regex patterns - return entity's own ID (regex is just a matcher)
+        if (!regexPatterns.isEmpty()) {
+            String fullId = id.toString();
+            for (Pattern pattern : regexPatterns) {
+                if (pattern.matcher(fullId).matches()) {
+                    return fullId;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets the config key for an entity type (used to look up datapack config settings).
+     * This returns the original target string from the datapack: the tag, regex pattern, or entity ID.
+     * Returns null if the entity doesn't match any config entry.
+     */
+    public static String getConfigKey(EntityType<?> entityType) {
+        // Check exact matches - config key is the entity ID
+        if (exactMatches.contains(entityType)) {
+            ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entityType);
+            return id != null ? id.toString() : null;
+        }
+
+        // Check entity tags - config key is the tag string
+        if (!entityTags.isEmpty()) {
+            for (TagKey<EntityType<?>> tag : entityTags) {
+                if (entityType.is(tag)) {
+                    return "#" + tag.location().toString();
+                }
+            }
+        }
+
+        // Check regex patterns - config key is the original regex target
         if (!regexPatterns.isEmpty()) {
             ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entityType);
             if (id != null) {

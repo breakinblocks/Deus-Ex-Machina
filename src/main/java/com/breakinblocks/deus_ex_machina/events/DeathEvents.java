@@ -65,20 +65,20 @@ public class DeathEvents {
 
         ResourceLocation killerTypeId = ForgeRegistries.ENTITY_TYPES.getKey(killer.getType());
 
-        DeusExBuffsHelper.withBuffsForMob(player, killer, (buff, groupKey) -> {
-            TypeEnum trackingType = DeusExMobConfigManager.getType(groupKey);
+        DeusExBuffsHelper.withBuffsForMob(player, killer, (buff, storageKey, configKey) -> {
+            TypeEnum trackingType = DeusExMobConfigManager.getType(configKey);
 
             // Track buff changes for network sync
             Map<ResourceLocation, int[]> buffChanges = new HashMap<>(); // buffId -> [gain, newValue]
 
             // Iterate over all registered buff types
             for (BuffType buffType : BuffRegistry.getAll()) {
-                if (!DeusExMobConfigManager.isBuffEnabled(groupKey, buffType.getId())) {
+                if (!DeusExMobConfigManager.isBuffEnabled(configKey, buffType.getId())) {
                     continue;
                 }
 
-                int increase = DeusExMobConfigManager.getBuffIncrease(groupKey, buffType);
-                int max = DeusExMobConfigManager.getBuffMax(groupKey, buffType);
+                int increase = DeusExMobConfigManager.getBuffIncrease(configKey, buffType);
+                int max = DeusExMobConfigManager.getBuffMax(configKey, buffType);
                 int newValue;
 
                 if (trackingType == TypeEnum.INSTANCE) {
@@ -88,10 +88,10 @@ public class DeathEvents {
                     mobData.addBuff(player.getUUID(), buffType.getId(), increase, max);
                     newValue = mobData.getBuff(player.getUUID(), buffType.getId());
                 } else {
-                    // Entity type mode: store buff on the player
-                    int currentValue = buff.getBuff(groupKey, buffType.getId());
+                    // Entity type mode: store buff on the player using storage key
+                    int currentValue = buff.getBuff(storageKey, buffType.getId());
                     newValue = Math.min(max, currentValue + increase);
-                    buff.setBuff(groupKey, buffType.getId(), newValue);
+                    buff.setBuff(storageKey, buffType.getId(), newValue);
                 }
 
                 buffChanges.put(buffType.getId(), new int[]{increase, newValue});
@@ -102,8 +102,8 @@ public class DeathEvents {
 
             // Send network packet with all buff changes
             if (player instanceof ServerPlayer serverPlayer && !buffChanges.isEmpty()) {
-                DeusExMachina.LOGGER.info("[DeathEvents] Sending DeathBuffPacket to {} for mob {} (group: {})",
-                        serverPlayer.getName().getString(), killerTypeId, groupKey);
+                DeusExMachina.LOGGER.info("[DeathEvents] Sending DeathBuffPacket to {} for mob {} (storage: {}, config: {})",
+                        serverPlayer.getName().getString(), killerTypeId, storageKey, configKey);
                 NetworkHandler.sendToPlayer(serverPlayer, new DeathBuffPacket(killerTypeId, buffChanges));
             }
         });
@@ -114,25 +114,26 @@ public class DeathEvents {
         if (source.getEntity() == null) return;
         if (!(source.getEntity() instanceof Player player)) return;
 
-        String groupKey = DeusExBuffsHelper.getGroupKey(entity.getType()).orElse(null);
-        if (groupKey == null) return;
+        String storageKey = DeusExBuffsHelper.getGroupKey(entity.getType()).orElse(null);
+        String configKey = DeusExBuffsHelper.getConfigKey(entity.getType()).orElse(null);
+        if (storageKey == null || configKey == null) return;
 
         if (!player.hasEffect(EffectRegistry.DEUS_EX_MACHINA_EFFECT.get())) return;
 
         DeusExBuffsHelper.withBuffs(player, buff -> {
             // Iterate over all registered buff types
             for (BuffType buffType : BuffRegistry.getAll()) {
-                if (!DeusExMobConfigManager.isBuffEnabled(groupKey, buffType.getId())) {
+                if (!DeusExMobConfigManager.isBuffEnabled(configKey, buffType.getId())) {
                     continue;
                 }
 
-                int min = DeusExMobConfigManager.getBuffMin(groupKey, buffType);
-                int increase = DeusExMobConfigManager.getBuffIncrease(groupKey, buffType);
-                int currentValue = buff.getBuff(groupKey, buffType.getId());
+                int min = DeusExMobConfigManager.getBuffMin(configKey, buffType);
+                int increase = DeusExMobConfigManager.getBuffIncrease(configKey, buffType);
+                int currentValue = buff.getBuff(storageKey, buffType.getId());
 
-                switch (DeusExMobConfigManager.getBuffReset(groupKey, buffType)) {
-                    case FULL -> buff.setBuff(groupKey, buffType.getId(), min);
-                    case PARTIAL -> buff.setBuff(groupKey, buffType.getId(), Math.max(min, currentValue - increase));
+                switch (DeusExMobConfigManager.getBuffReset(configKey, buffType)) {
+                    case FULL -> buff.setBuff(storageKey, buffType.getId(), min);
+                    case PARTIAL -> buff.setBuff(storageKey, buffType.getId(), Math.max(min, currentValue - increase));
                     case NONE -> {} // Keep current value
                 }
             }

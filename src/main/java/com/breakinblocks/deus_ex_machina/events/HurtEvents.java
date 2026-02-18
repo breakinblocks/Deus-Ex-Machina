@@ -41,40 +41,42 @@ public class HurtEvents {
         if (!Config.isDeusExMob(source.getEntity().getType())) return;
         if (!player.hasEffect(EffectRegistry.DEUS_EX_MACHINA_EFFECT.get())) return;
 
-        DeusExBuffsHelper.getGroupKey(livingAttacker.getType()).ifPresent(groupKey -> {
-            float damage = event.getAmount();
-            BuffContext context = BuffContext.playerHurt(player, livingAttacker, event);
+        String storageKey = DeusExBuffsHelper.getGroupKey(livingAttacker.getType()).orElse(null);
+        String configKey = DeusExBuffsHelper.getConfigKey(livingAttacker.getType()).orElse(null);
+        if (storageKey == null || configKey == null) return;
 
-            // Apply all buffs that work on player hurt
-            for (BuffType buffType : BuffRegistry.getAll()) {
-                if (!buffType.appliesOnPlayerHurt()) continue;
-                if (!DeusExMobConfigManager.isBuffEnabled(groupKey, buffType.getId())) continue;
+        float damage = event.getAmount();
+        BuffContext context = BuffContext.playerHurt(player, livingAttacker, event);
 
-                int buffValue;
-                if (DeusExMobConfigManager.getType(groupKey) == TypeEnum.INSTANCE) {
-                    // Instance mode: get buff from mob's capability
-                    DeusExMobData mobData = livingAttacker.getCapability(DeusExMobDataProvider.DEUS_EX_MOB_DATA)
-                            .orElse(null);
-                    buffValue = mobData != null ? mobData.getBuff(player.getUUID(), buffType.getId()) : 0;
-                } else {
-                    // Entity type mode: get buff from player's capability
-                    buffValue = DeusExBuffsHelper.getBuffs(player)
-                            .map(buff -> buff.getBuff(groupKey, buffType.getId()))
-                            .orElse(0);
-                }
+        // Apply all buffs that work on player hurt
+        for (BuffType buffType : BuffRegistry.getAll()) {
+            if (!buffType.appliesOnPlayerHurt()) continue;
+            if (!DeusExMobConfigManager.isBuffEnabled(configKey, buffType.getId())) continue;
 
-                if (buffValue != 0) {
-                    float newDamage = buffType.apply(buffValue, damage, context);
-                    debug("Applied " + buffType.getId() + " (value=" + buffValue + "): " + damage + " -> " + newDamage);
-                    damage = newDamage;
-                }
+            int buffValue;
+            if (DeusExMobConfigManager.getType(configKey) == TypeEnum.INSTANCE) {
+                // Instance mode: get buff from mob's capability
+                DeusExMobData mobData = livingAttacker.getCapability(DeusExMobDataProvider.DEUS_EX_MOB_DATA)
+                        .orElse(null);
+                buffValue = mobData != null ? mobData.getBuff(player.getUUID(), buffType.getId()) : 0;
+            } else {
+                // Entity type mode: get buff from player's capability
+                buffValue = DeusExBuffsHelper.getBuffs(player)
+                        .map(buff -> buff.getBuff(storageKey, buffType.getId()))
+                        .orElse(0);
             }
 
-            if (damage != event.getAmount()) {
-                event.setAmount(damage);
-                debug("Player " + player.getName().getString() + " hurt by " + groupKey + ". Final damage: " + damage);
+            if (buffValue != 0) {
+                float newDamage = buffType.apply(buffValue, damage, context);
+                debug("Applied " + buffType.getId() + " (value=" + buffValue + "): " + damage + " -> " + newDamage);
+                damage = newDamage;
             }
-        });
+        }
+
+        if (damage != event.getAmount()) {
+            event.setAmount(damage);
+            debug("Player " + player.getName().getString() + " hurt by " + storageKey + ". Final damage: " + damage);
+        }
     }
 
     private static void handleMobHurt(LivingHurtEvent event, LivingEntity entity, DamageSource source) {
@@ -82,39 +84,41 @@ public class HurtEvents {
         if (!(source.getEntity() instanceof Player player)) return;
         if (!player.hasEffect(EffectRegistry.DEUS_EX_MACHINA_EFFECT.get())) return;
 
-        DeusExBuffsHelper.getGroupKey(entity).ifPresent(groupKey -> {
-            float damage = event.getAmount();
-            BuffContext context = BuffContext.playerAttack(player, entity, event);
+        String storageKey = DeusExBuffsHelper.getGroupKey(entity).orElse(null);
+        String configKey = DeusExBuffsHelper.getConfigKey(entity).orElse(null);
+        if (storageKey == null || configKey == null) return;
 
-            // Apply all buffs that work on player attack
-            for (BuffType buffType : BuffRegistry.getAll()) {
-                if (!buffType.appliesOnPlayerAttack()) continue;
-                if (!DeusExMobConfigManager.isBuffEnabled(groupKey, buffType.getId())) continue;
+        float damage = event.getAmount();
+        BuffContext context = BuffContext.playerAttack(player, entity, event);
 
-                int buffValue;
-                if (DeusExMobConfigManager.getType(groupKey) == TypeEnum.INSTANCE) {
-                    // Instance mode: get buff from mob's capability
-                    DeusExMobData mobData = entity.getCapability(DeusExMobDataProvider.DEUS_EX_MOB_DATA)
-                            .orElse(null);
-                    buffValue = mobData != null ? mobData.getBuff(player.getUUID(), buffType.getId()) : 0;
-                } else {
-                    // Entity type mode: get buff from player's capability
-                    buffValue = DeusExBuffsHelper.getBuffs(player)
-                            .map(buff -> buff.getBuff(groupKey, buffType.getId()))
-                            .orElse(0);
-                }
+        // Apply all buffs that work on player attack
+        for (BuffType buffType : BuffRegistry.getAll()) {
+            if (!buffType.appliesOnPlayerAttack()) continue;
+            if (!DeusExMobConfigManager.isBuffEnabled(configKey, buffType.getId())) continue;
 
-                if (buffValue != 0) {
-                    float newDamage = buffType.apply(buffValue, damage, context);
-                    debug("Applied " + buffType.getId() + " (value=" + buffValue + "): " + damage + " -> " + newDamage);
-                    damage = newDamage;
-                }
+            int buffValue;
+            if (DeusExMobConfigManager.getType(configKey) == TypeEnum.INSTANCE) {
+                // Instance mode: get buff from mob's capability
+                DeusExMobData mobData = entity.getCapability(DeusExMobDataProvider.DEUS_EX_MOB_DATA)
+                        .orElse(null);
+                buffValue = mobData != null ? mobData.getBuff(player.getUUID(), buffType.getId()) : 0;
+            } else {
+                // Entity type mode: get buff from player's capability
+                buffValue = DeusExBuffsHelper.getBuffs(player)
+                        .map(buff -> buff.getBuff(storageKey, buffType.getId()))
+                        .orElse(0);
             }
 
-            if (damage != event.getAmount()) {
-                event.setAmount(damage);
-                debug("Player " + player.getName().getString() + " hurting " + groupKey + ". Final damage: " + damage);
+            if (buffValue != 0) {
+                float newDamage = buffType.apply(buffValue, damage, context);
+                debug("Applied " + buffType.getId() + " (value=" + buffValue + "): " + damage + " -> " + newDamage);
+                damage = newDamage;
             }
-        });
+        }
+
+        if (damage != event.getAmount()) {
+            event.setAmount(damage);
+            debug("Player " + player.getName().getString() + " hurting " + storageKey + ". Final damage: " + damage);
+        }
     }
 }
