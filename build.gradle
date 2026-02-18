@@ -206,19 +206,37 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
 
+// Load .env.local for secrets (CurseForge token, project ID)
+def envFile = file('.env.local')
+def envProps = new Properties()
+if (envFile.exists()) {
+    envFile.withInputStream { envProps.load(it) }
+}
+
 // CurseForge publishing
-// Usage: ./gradlew publishCurseForge -Pcurseforge_token=YOUR_API_TOKEN
+// 1. Copy .env.local and fill in your token + project ID
+// 2. Run: ./gradlew publishCurseForge
 // API token: https://www.curseforge.com/account/api-tokens
 task publishCurseForge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge) {
     dependsOn 'build'
 
-    apiToken = findProperty('curseforge_token') ?: 'unset'
+    def token = envProps.getProperty('CURSEFORGE_TOKEN') ?: findProperty('curseforge_token')
+    def projectId = envProps.getProperty('CURSEFORGE_PROJECT_ID') ?: findProperty('curseforge_project')
 
-    def mainFile = upload(findProperty('curseforge_project') ?: '0', jar)
-    mainFile.releaseType = 'release'
-    mainFile.changelog = file('CHANGELOG.md').text
-    mainFile.changelogType = 'markdown'
-    mainFile.addGameVersion(minecraft_version)
-    mainFile.addModLoader('Forge')
-    mainFile.addJavaVersion('Java 17')
+    // Only configure upload when credentials are provided
+    if (token && projectId && projectId != 'your_project_id_here') {
+        apiToken = token
+
+        def mainFile = upload(projectId, jar)
+        mainFile.releaseType = 'release'
+        mainFile.changelog = file('CHANGELOG.md').text
+        mainFile.changelogType = 'markdown'
+        mainFile.addGameVersion(minecraft_version)
+        mainFile.addModLoader('Forge')
+        mainFile.addJavaVersion('Java 17')
+    } else {
+        doFirst {
+            throw new GradleException('CurseForge credentials not configured. Set CURSEFORGE_TOKEN and CURSEFORGE_PROJECT_ID in .env.local')
+        }
+    }
 }
