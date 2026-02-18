@@ -1,6 +1,7 @@
 package com.breakinblocks.deus_ex_machina.events;
 
 import com.breakinblocks.deus_ex_machina.Config;
+import com.breakinblocks.deus_ex_machina.command.DeusExCommand;
 import com.breakinblocks.deus_ex_machina.data.DeusExBuffsProvider;
 import com.breakinblocks.deus_ex_machina.data.DeusExMobData;
 import com.breakinblocks.deus_ex_machina.data.DeusExMobDataProvider;
@@ -11,6 +12,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -33,6 +35,11 @@ public class ForgeEvents {
                 event.addCapability(new ResourceLocation(MODID, "deus_ex_mob_data"), new DeusExMobDataProvider());
             }
         }
+    }
+
+    @SubscribeEvent
+    public static void onRegisterCommands(RegisterCommandsEvent event) {
+        DeusExCommand.register(event.getDispatcher());
     }
 
 }
