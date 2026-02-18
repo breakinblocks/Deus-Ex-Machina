@@ -4,6 +4,7 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id 'net.neoforged.moddev' version '2.0.28-beta'
+    id 'net.darkhax.curseforgegradle' version '1.1.28'
 }
 
 version = mod_version
@@ -113,5 +114,45 @@ idea {
     module {
         downloadSources = true
         downloadJavadoc = true
+    }
+}
+
+// Load .env.local for secrets (CurseForge token, project ID)
+def envFile = file('.env.local')
+def envProps = new Properties()
+if (envFile.exists()) {
+    envFile.withInputStream { envProps.load(it) }
+}
+
+// CurseForge publishing
+// 1. Fill in CURSEFORGE_TOKEN and CURSEFORGE_PROJECT_ID in .env.local
+// 2. Run: ./gradlew publishCurseForge
+// API token: https://www.curseforge.com/account/api-tokens
+task publishCurseForge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge) {
+    group = 'publishing'
+    description = 'Publishes the mod jar to CurseForge'
+    dependsOn 'build'
+
+    def token = envProps.getProperty('CURSEFORGE_TOKEN') ?: findProperty('curseforge_token')
+    def projectId = envProps.getProperty('CURSEFORGE_PROJECT_ID') ?: findProperty('curseforge_project')
+
+    // Only configure upload when credentials are provided
+    if (token && projectId && projectId != 'your_project_id_here') {
+        apiToken = token
+
+        def mainFile = upload(projectId, jar)
+        mainFile.displayName = "Deus Ex Machina V${mod_version}"
+        mainFile.releaseType = 'release'
+        // Extract only the current version's changelog section
+        def fullChangelog = file('CHANGELOG.md').text
+        def versionSection = fullChangelog.find(/(?s)## \[${mod_version}\].*?(?=\n## \[|$)/)
+        mainFile.changelog = versionSection ?: fullChangelog
+        mainFile.changelogType = 'markdown'
+        mainFile.addGameVersion(minecraft_version)
+        mainFile.addModLoader('NeoForge')
+    } else {
+        doFirst {
+            throw new GradleException('CurseForge credentials not configured. Set CURSEFORGE_TOKEN and CURSEFORGE_PROJECT_ID in .env.local')
+        }
     }
 }
