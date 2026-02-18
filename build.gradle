@@ -229,7 +229,10 @@ task publishCurseForge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge)
 
         def mainFile = upload(projectId, jar)
         mainFile.releaseType = 'release'
-        mainFile.changelog = file('CHANGELOG.md').text
+        // Extract only the current version's changelog section
+        def fullChangelog = file('CHANGELOG.md').text
+        def versionSection = fullChangelog.find(/(?s)## \[${mod_version}\].*?(?=\n## \[|$)/)
+        mainFile.changelog = versionSection ?: fullChangelog
         mainFile.changelogType = 'markdown'
         mainFile.addGameVersion(minecraft_version)
         mainFile.addModLoader('Forge')
