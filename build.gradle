@@ -218,6 +218,8 @@ if (envFile.exists()) {
 // 2. Run: ./gradlew publishCurseForge
 // API token: https://www.curseforge.com/account/api-tokens
 task publishCurseForge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge) {
+    group = 'publishing'
+    description = 'Publishes the mod jar to CurseForge'
     dependsOn 'build'
 
     def token = envProps.getProperty('CURSEFORGE_TOKEN') ?: findProperty('curseforge_token')
