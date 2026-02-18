@@ -2,6 +2,23 @@
 
 All notable changes to Deus Ex Machina will be documented in this file.
 
+## [1.2.0] - 2026-02-18
+
+### Added
+- **Admin Commands** — `/deus_ex_machina set|add|remove|reset` commands for managing buff values per entity type per player (requires OP level 2)
+- `/deus_ex_machina reset all <entityType>` to reset all buffs for a specific entity type
+- `/deus_ex_machina reset all all` to reset all buffs for all entities
+- Tab-completion for buff types and entity types in all commands
+- CurseForge publishing support in build configuration
+
+### Fixed
+- **Regex mob keys now store per-entity** — Regex targets (e.g. `/minecraft:.*/`) now correctly store buff data under each entity's own ID instead of grouping everything under the regex pattern string. Regex patterns act as eligibility matchers only; each matching entity type gets its own independent buff progression.
+
+### Changed
+- Changed Ambrosia Recipe to use a Strong Healing Potion instead of a Strong Regen Potion
+- Refactored Brewing Registry to support multiple recipes with JEI integration
+- Split `getGroupKey` (storage key) from `getConfigKey` (config lookup key) in mob handler to properly separate buff data storage from datapack configuration resolution
+
 ## [1.1] - 2025-02-12
 
 ### Added
