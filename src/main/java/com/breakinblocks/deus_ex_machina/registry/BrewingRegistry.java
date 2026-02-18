@@ -9,42 +9,71 @@ import net.minecraft.world.item.alchemy.Potions;
 import net.minecraftforge.common.brewing.BrewingRecipeRegistry;
 import net.minecraftforge.common.brewing.IBrewingRecipe;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class BrewingRegistry {
+
+    private static final List<BrewingRecipe> RECIPES = new ArrayList<>();
+
+    public static List<BrewingRecipe> getRecipes() {
+        return Collections.unmodifiableList(RECIPES);
+    }
+
     public static void registerRecipes() {
-        BrewingRecipeRegistry.addRecipe(new BrewingRecipe(
-                Potions.LONG_REGENERATION,
+        addRecipe(new BrewingRecipe(
+                Potions.STRONG_HEALING,
                 Items.HONEY_BOTTLE,
                 new ItemStack(ItemRegistry.AMBROSIA.get())
         ));
     }
-}
 
-class BrewingRecipe implements IBrewingRecipe {
-
-    private final Potion input;
-    private final Item ingredient;
-    private final ItemStack output;
-
-    public BrewingRecipe(Potion input, Item ingredient, ItemStack output) {
-        this.input = input;
-        this.ingredient = ingredient;
-        this.output = output;
-    }
-    @Override
-    public boolean isInput(ItemStack input) {
-        return PotionUtils.getPotion(input) == this.input;
+    private static void addRecipe(BrewingRecipe recipe) {
+        BrewingRecipeRegistry.addRecipe(recipe);
+        RECIPES.add(recipe);
     }
 
-    @Override
-    public boolean isIngredient(ItemStack ingredient) {
-        return ingredient.getItem() == this.ingredient;
-    }
+    public static class BrewingRecipe implements IBrewingRecipe {
 
-    @Override
-    public ItemStack getOutput(ItemStack input, ItemStack ingredient) {
-        if (isInput(input) && isIngredient(ingredient)) {
-            return this.output.copy();
+        private final Potion input;
+        private final Item ingredient;
+        private final ItemStack output;
+
+        public BrewingRecipe(Potion input, Item ingredient, ItemStack output) {
+            this.input = input;
+            this.ingredient = ingredient;
+            this.output = output;
         }
-        return ItemStack.EMPTY;
+
+        public Potion getInputPotion() {
+            return input;
+        }
+
+        public Item getIngredientItem() {
+            return ingredient;
+        }
+
+        public ItemStack getRecipeOutput() {
+            return output.copy();
+        }
+
+        @Override
+        public boolean isInput(ItemStack input) {
+            return PotionUtils.getPotion(input) == this.input;
+        }
+
+        @Override
+        public boolean isIngredient(ItemStack ingredient) {
+            return ingredient.getItem() == this.ingredient;
+        }
+
+        @Override
+        public ItemStack getOutput(ItemStack input, ItemStack ingredient) {
+            if (isInput(input) && isIngredient(ingredient)) {
+                return this.output.copy();
+            }
+            return ItemStack.EMPTY;
+        }
     }
 }
