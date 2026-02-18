@@ -230,6 +230,7 @@ task publishCurseForge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge)
         apiToken = token
 
         def mainFile = upload(projectId, jar)
+        mainFile.displayName = "Deus Ex Machina V${mod_version}"
         mainFile.releaseType = 'release'
         // Extract only the current version's changelog section
         def fullChangelog = file('CHANGELOG.md').text
@@ -238,7 +239,6 @@ task publishCurseForge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge)
         mainFile.changelogType = 'markdown'
         mainFile.addGameVersion(minecraft_version)
         mainFile.addModLoader('Forge')
-        mainFile.addJavaVersion('Java 17')
     } else {
         doFirst {
             throw new GradleException('CurseForge credentials not configured. Set CURSEFORGE_TOKEN and CURSEFORGE_PROJECT_ID in .env.local')
