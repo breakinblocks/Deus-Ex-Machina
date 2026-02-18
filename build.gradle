@@ -13,6 +13,7 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
+    id 'net.darkhax.curseforgegradle' version '1.1.28'
 }
 
 apply plugin: 'org.spongepowered.mixin'
@@ -203,4 +204,21 @@ tasks.named('jar', Jar).configure {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+
+// CurseForge publishing
+// Usage: ./gradlew publishCurseForge -Pcurseforge_token=YOUR_API_TOKEN
+// API token: https://www.curseforge.com/account/api-tokens
+task publishCurseForge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge) {
+    dependsOn 'build'
+
+    apiToken = findProperty('curseforge_token') ?: 'unset'
+
+    def mainFile = upload(findProperty('curseforge_project') ?: '0', jar)
+    mainFile.releaseType = 'release'
+    mainFile.changelog = file('CHANGELOG.md').text
+    mainFile.changelogType = 'markdown'
+    mainFile.addGameVersion(minecraft_version)
+    mainFile.addModLoader('Forge')
+    mainFile.addJavaVersion('Java 17')
 }
